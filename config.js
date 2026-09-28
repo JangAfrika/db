@@ -1,5 +1,5 @@
 // Dynamic Builders — shared config & API client
-// Every dashboard page (and login.html) loads this file first.
+// Every dashboard page (and index.html) loads this file first.
 
 // Paste your deployed Apps Script Web App URL here after you deploy
 // Code.gs/Auth.gs (Deploy > New deployment > Web app > Execute as Me,
@@ -7,7 +7,7 @@
 // https://script.google.com/macros/s/XXXXXXXXXXXXXXXXXXXX/exec
 const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbz1lif_6wQAlhTFZOvpK7WLaG43SN8mHcuASpo2zPfkijcOrT0Qgz7yie-BTbuZPGj09w/exec';
 
-// Where login.html sends each role after a successful login.
+// Where index.html sends each role after a successful login.
 const ROLE_PAGES = {
   IT_ADMIN: 'it-admin.html',
   MANAGER: 'manager.html',
@@ -105,7 +105,7 @@ function requireRole(expectedRole) {
   const token = sessionStorage.getItem('token');
   const role = sessionStorage.getItem('role');
   if (!token || role !== expectedRole) {
-    window.location.href = 'login.html';
+    window.location.href = 'index.html';
     return null;
   }
   return {
@@ -120,7 +120,7 @@ function requireRole(expectedRole) {
 function logout() {
   apiCall('logout', {}).catch(function () {}).finally(function () {
     sessionStorage.clear();
-    window.location.href = 'login.html';
+    window.location.href = 'index.html';
   });
 }
 
