@@ -38,7 +38,7 @@ document.getElementById('loginForm').addEventListener('submit', async function (
     sessionStorage.setItem('name', data.name);
     sessionStorage.setItem('email', data.email);
     sessionStorage.setItem('userId', data.userId || '');
-    window.location.href = ROLE_PAGES[data.role] || 'login.html';
+    window.location.href = ROLE_PAGES[data.role] || 'index.html';
   } catch (err) {
     showError(errorEl, err);
   }
