@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dynamic Builders — Log in</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="centered">
+<form id="loginForm" class="card">
+  <div class="brand-mark"><span class="logo">DB</span> <strong>Dynamic Builders</strong></div>
+  <p class="muted" style="margin-bottom:20px">Site reporting system</p>
+
+  <label>Email
+    <input type="email" id="email" required autocomplete="username">
+  </label>
+  <label>Password
+    <input type="password" id="password" required autocomplete="current-password">
+  </label>
+  <button type="submit" style="width:100%">Log in</button>
+  <p id="error" class="error" hidden></p>
+</form>
+
+<script src="config.js"></script>
+<script>
+document.getElementById('loginForm').addEventListener('submit', async function (e) {
+  e.preventDefault();
+  const errorEl = document.getElementById('error');
+  errorEl.hidden = true;
+
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+
+  try {
+    const data = await apiCall('login', { email: email, password: password });
+    sessionStorage.setItem('token', data.token);
+    sessionStorage.setItem('role', data.role);
+    sessionStorage.setItem('name', data.name);
+    sessionStorage.setItem('email', data.email);
+    sessionStorage.setItem('userId', data.userId || '');
+    window.location.href = ROLE_PAGES[data.role] || 'login.html';
+  } catch (err) {
+    showError(errorEl, err);
+  }
+});
+</script>
+</body>
+</html>
