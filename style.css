@@ -83,6 +83,8 @@ a { color: var(--accent-ink); }
   position: sticky;
   top: 0;
   height: 100vh;
+  height: 100dvh;
+  overflow-y: auto;
 }
 
 .sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 6px 8px 20px; }
@@ -346,6 +348,7 @@ tbody tr:hover td { background: var(--bg); }
     left: 0;
     bottom: 0;
     height: 100vh;
+    height: 100dvh;
     width: 240px;
     max-width: 82vw;
     flex-direction: column;
@@ -355,11 +358,14 @@ tbody tr:hover td { background: var(--bg); }
     transform: translateX(-100%);
     transition: transform .25s ease;
     overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
   }
   .sidebar.open { transform: translateX(0); }
   .sidebar-brand { padding: 6px 8px 20px; }
   .sidebar-label { display: block; }
-  .sidebar-foot { display: block; margin-top: auto; padding-top: 10px; border-top: 1px solid rgba(255,255,255,.08); }
+  .sidebar-foot { display: block; margin-top: auto; padding-top: 10px; padding-bottom: 8px; border-top: 1px solid rgba(255,255,255,.08); }
 
   .sidebar-backdrop { display: block; }
   .sidebar-backdrop.open { opacity: 1; pointer-events: auto; }
@@ -408,3 +414,37 @@ h3.chart-section { margin: 28px 0 10px; }
 .delta.up { color: var(--good); }
 .delta.down { color: var(--danger); }
 .analytics-note { font-size: 12px; color: var(--ink-soft); margin: 8px 0 0; }
+
+/* ---------- Dialog boxes (dialog.js) ---------- */
+.dlg-overlay { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(16, 26, 46, .5); backdrop-filter: blur(3px); opacity: 0; transition: opacity .15s ease; }
+.dlg-overlay.dlg-in { opacity: 1; }
+.dlg { width: 100%; max-width: 420px; background: var(--surface); border-radius: var(--radius); padding: 24px; box-shadow: 0 20px 50px rgba(16, 24, 40, .25), 0 2px 8px rgba(16, 24, 40, .1); transform: translateY(8px) scale(.98); transition: transform .15s ease; }
+.dlg-in .dlg { transform: none; }
+.dlg-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
+.dlg-icon svg { width: 22px; height: 22px; }
+.dlg-info { background: var(--accent-soft); color: var(--accent); }
+.dlg-success { background: var(--good-bg); color: var(--good); }
+.dlg-danger { background: var(--danger-bg); color: var(--danger); }
+.dlg-title { margin: 0; font-size: 18px; font-weight: 600; color: var(--ink); }
+.dlg-msg { margin: 6px 0 0; font-size: 14px; line-height: 1.5; color: var(--ink-soft); }
+.dlg-field { margin-top: 18px; }
+.dlg-label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 500; color: var(--ink); }
+.dlg-input-row { position: relative; }
+.dlg-input { width: 100%; box-sizing: border-box; padding: 11px 14px; font: inherit; font-size: 14px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); outline: none; resize: vertical; }
+.dlg-input-row .dlg-input { padding-right: 62px; }
+.dlg-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.dlg-input.dlg-invalid { border-color: var(--danger); box-shadow: 0 0 0 3px var(--danger-bg); }
+.dlg-eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); padding: 5px 10px; font-size: 12px; font-weight: 500; color: var(--accent); background: transparent; border: 0; border-radius: 6px; cursor: pointer; }
+.dlg-eye:hover { background: var(--accent-soft); }
+.dlg-hint { margin-top: 6px; font-size: 12px; color: var(--ink-soft); }
+.dlg-error { min-height: 16px; margin-top: 6px; font-size: 12.5px; color: var(--danger); }
+.dlg-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+.dlg-btn { padding: 9px 20px; font: inherit; font-size: 14px; font-weight: 500; border-radius: 999px; border: 1px solid transparent; cursor: pointer; }
+.dlg-ok { color: #fff; background: var(--accent); }
+.dlg-ok:hover { background: var(--accent-ink); }
+.dlg-ok-danger { background: var(--danger); }
+.dlg-ok-danger:hover { background: #a3222f; }
+.dlg-cancel { color: var(--ink); background: var(--surface); border-color: var(--line); }
+.dlg-cancel:hover { background: var(--bg); }
+.dlg-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (max-width: 480px) { .dlg-actions { flex-direction: column-reverse; } .dlg-btn { width: 100%; } }
