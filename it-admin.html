@@ -8,6 +8,7 @@
 </head>
 <body>
 <div class="app-shell">
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
   <aside class="sidebar">
     <div class="sidebar-brand">
       <span class="logo">DB</span>
@@ -26,6 +27,7 @@
 
   <div class="main-col">
     <header class="topbar">
+      <button class="hamburger-btn" id="sidebarToggle" aria-label="Toggle menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
       <div class="topbar-title">
         <h1>IT admin</h1>
         <p class="muted">Accounts &amp; the support queue</p>
@@ -50,10 +52,10 @@
           <div class="stat-card"><div class="label">Resolved tickets</div><div class="value" id="statResolvedTickets">—</div></div>
         </section>
         <h3 style="margin-top:22px">Recent tickets</h3>
-        <table>
+        <div class="table-scroll"><table>
           <thead><tr><th>Raised by</th><th>Category</th><th>Status</th></tr></thead>
           <tbody id="overviewTicketsBody"></tbody>
-        </table>
+        </table></div>
       </section>
 
       <section class="panel" id="users">
@@ -116,18 +118,18 @@
           <p id="editUserError" class="error" hidden></p>
         </div>
 
-        <table>
+        <div class="table-scroll"><table>
           <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Reports to</th><th>Status</th><th>Phone</th><th></th></tr></thead>
           <tbody id="usersBody"></tbody>
-        </table>
+        </table></div>
       </section>
 
       <section class="panel" id="tickets">
         <div class="panel-head"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Support tickets</h2><button class="secondary small" id="refreshTickets">Refresh</button></div>
-        <table>
+        <div class="table-scroll"><table>
           <thead><tr><th>Raised by</th><th>Category</th><th>Description</th><th>Status</th><th></th></tr></thead>
           <tbody id="ticketsBody"></tbody>
-        </table>
+        </table></div>
       </section>
     </main>
   </div>
@@ -139,6 +141,7 @@ const session = requireRole('IT_ADMIN');
 document.getElementById('whoName').textContent = session.name;
 document.getElementById('whoAvatar').textContent = (session.name || '?').split(' ').map(function (s) { return s[0]; }).join('').slice(0, 2).toUpperCase();
 setupSidebarTabs('overview');
+setupMobileSidebar();
 
 let usersById = {}, latestUsers = [];
 
