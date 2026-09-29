@@ -162,6 +162,40 @@ function el(tag, attrs, children) {
   return node;
 }
 
+// ---- mobile sidebar: hamburger-triggered off-canvas drawer ----
+//
+// Below the 860px breakpoint the sidebar is hidden off-screen by CSS; this
+// wires up the hamburger button to slide it in, a backdrop tap or a nav
+// click to close it again, and resets state if the window is resized back
+// past the breakpoint. Call once per page, after the sidebar/backdrop/
+// hamburger markup exists in the DOM.
+function setupMobileSidebar() {
+  const sidebar = document.querySelector('.sidebar');
+  const backdrop = document.getElementById('sidebarBackdrop');
+  const toggleBtn = document.getElementById('sidebarToggle');
+  if (!sidebar || !toggleBtn) return;
+
+  function open() {
+    sidebar.classList.add('open');
+    if (backdrop) backdrop.classList.add('open');
+    document.body.classList.add('sidebar-locked');
+  }
+  function close() {
+    sidebar.classList.remove('open');
+    if (backdrop) backdrop.classList.remove('open');
+    document.body.classList.remove('sidebar-locked');
+  }
+
+  toggleBtn.addEventListener('click', function () {
+    if (sidebar.classList.contains('open')) close(); else open();
+  });
+  if (backdrop) backdrop.addEventListener('click', close);
+  sidebar.querySelectorAll('.nav-item').forEach(function (item) {
+    item.addEventListener('click', function () { if (window.innerWidth <= 860) close(); });
+  });
+  window.addEventListener('resize', function () { if (window.innerWidth > 860) close(); });
+}
+
 function showError(containerEl, err) {
   containerEl.textContent = err.message || String(err);
   containerEl.hidden = false;
