@@ -18,6 +18,7 @@
     <a class="nav-item" href="#overview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Overview</a>
     <a class="nav-item" href="#users"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Users</a>
     <a class="nav-item" href="#tickets"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Support tickets</a>
+    <a class="nav-item" href="#auditlog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>Audit log</a>
     <div class="sidebar-foot">
       <a class="nav-item" href="profile.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>My profile</a>
       <button class="nav-item" onclick="reportIssue()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>Report an issue</button>
@@ -131,6 +132,21 @@
           <tbody id="ticketsBody"></tbody>
         </table></div>
       </section>
+
+      <section class="panel" id="auditlog">
+        <div class="panel-head">
+          <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Audit log</h2>
+          <div class="head-actions">
+            <input class="search-input" id="auditSearch" placeholder="Search log…">
+            <button class="secondary small" id="refreshAuditLog">Refresh</button>
+          </div>
+        </div>
+        <p class="muted" style="margin-top:-6px">Every login, and every action that changed data — who did it and when. Showing the most recent <span id="auditLimitLabel">200</span>.</p>
+        <div class="table-scroll"><table>
+          <thead><tr><th>When</th><th>Who</th><th>Role</th><th>Action</th><th>Details</th></tr></thead>
+          <tbody id="auditLogBody"></tbody>
+        </table></div>
+      </section>
     </main>
   </div>
 </div>
@@ -242,6 +258,16 @@ async function loadUsers() {
     editBtn.addEventListener('click', function () { openEditUser(u); });
     actions.appendChild(editBtn);
 
+    const resetBtn = el('button', { class: 'small secondary', text: 'Reset password' });
+    resetBtn.onclick = oneShot(resetBtn, async function (reqId) {
+      const pw = prompt('New password for ' + u.name + ' (at least 6 characters):');
+      if (!pw) return;
+      if (pw.length < 6) { alert('Password must be at least 6 characters.'); return; }
+      await apiCall('resetUserPassword', { userId: u.id, newPassword: pw }, reqId);
+      alert("Password reset. Let " + u.name + " know their new password.");
+    });
+    actions.appendChild(resetBtn);
+
     const statusBtn = el('button', { class: 'small secondary', text: u.status === 'active' ? 'Suspend' : 'Reactivate' });
     statusBtn.onclick = oneShot(statusBtn, async function (reqId) {
       const action = u.status === 'active' ? 'suspendUser' : 'reactivateUser';
@@ -325,8 +351,40 @@ async function loadTickets() {
   });
 }
 
+const AUDIT_LOG_LIMIT = 200;
+async function loadAuditLog() {
+  const [log, users] = await Promise.all([
+    apiCall('list', { table: 'AUDIT_LOG' }),
+    apiCall('list', { table: 'USERS' })
+  ]);
+  const usersById2 = byId(users);
+  const body = document.getElementById('auditLogBody');
+  body.innerHTML = '';
+  const rows = log.slice().reverse().slice(0, AUDIT_LOG_LIMIT);
+  document.getElementById('auditLimitLabel').textContent = Math.min(AUDIT_LOG_LIMIT, log.length);
+  if (!rows.length) { body.appendChild(el('tr', {}, [el('td', { colspan: '5', class: 'empty', text: 'Nothing logged yet.' })])); return; }
+
+  rows.forEach(function (r) {
+    const who = r.user_name || (usersById2[r.user_id] ? usersById2[r.user_id].name : r.user_id) || '(unknown)';
+    body.appendChild(el('tr', { 'data-search': (who + ' ' + r.action + ' ' + r.details).toLowerCase() }, [
+      el('td', { text: r.created_at ? new Date(r.created_at).toLocaleString() : '—' }),
+      el('td', { text: who }),
+      el('td', { text: ROLE_LABELS[r.role] || r.role || '—' }),
+      el('td', { text: r.action }),
+      el('td', { text: r.details || '—' })
+    ]));
+  });
+}
+
 document.getElementById('refreshUsers').addEventListener('click', loadUsers);
 document.getElementById('refreshTickets').addEventListener('click', loadTickets);
+document.getElementById('refreshAuditLog').addEventListener('click', loadAuditLog);
+document.getElementById('auditSearch').addEventListener('input', function (e) {
+  const q = e.target.value.trim().toLowerCase();
+  document.querySelectorAll('#auditLogBody tr[data-search]').forEach(function (row) {
+    row.style.display = row.getAttribute('data-search').indexOf(q) === -1 ? 'none' : '';
+  });
+});
 document.getElementById('userSearch').addEventListener('input', function (e) {
   const q = e.target.value.trim().toLowerCase();
   document.querySelectorAll('#usersBody tr[data-search]').forEach(function (row) {
@@ -335,6 +393,7 @@ document.getElementById('userSearch').addEventListener('input', function (e) {
 });
 loadUsers();
 loadTickets();
+loadAuditLog();
 </script>
 </body>
 </html>
