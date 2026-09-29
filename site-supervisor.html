@@ -8,6 +8,7 @@
 </head>
 <body>
 <div class="app-shell">
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
   <aside class="sidebar">
     <div class="sidebar-brand">
       <span class="logo">DB</span>
@@ -28,6 +29,7 @@
 
   <div class="main-col">
     <header class="topbar">
+      <button class="hamburger-btn" id="sidebarToggle" aria-label="Toggle menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
       <div class="topbar-title">
         <h1>Site supervisor</h1>
         <p class="muted">Daily reports for your assigned projects</p>
@@ -50,19 +52,19 @@
           <div class="stat-card"><div class="label">Latest report</div><div class="value" id="statLatest">—</div></div>
         </section>
         <h3 style="margin-top:22px">Recent reports</h3>
-        <table>
+        <div class="table-scroll"><table>
           <thead><tr><th>Date</th><th>Project</th><th>Status</th></tr></thead>
           <tbody id="overviewReportsBody"></tbody>
-        </table>
+        </table></div>
       </section>
 
       <section class="panel" id="myprojects">
         <div class="panel-head"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>My projects</h2><button class="secondary small" id="refreshMyProjects">Refresh</button></div>
         <p class="muted" style="margin-top:-6px">Projects assigned to you. Name, budget and dates are set by the Manager or Admin secretary — use "Daily work plan" or "Submit report" to log your own work against one.</p>
-        <table>
+        <div class="table-scroll"><table>
           <thead><tr><th>Name</th><th>Site</th><th>Status</th></tr></thead>
           <tbody id="myProjectsBody"></tbody>
-        </table>
+        </table></div>
       </section>
 
       <section class="panel" id="workplan">
@@ -99,10 +101,10 @@
           </form>
           <p id="workPlanError" class="error" hidden></p>
         </div>
-        <table>
+        <div class="table-scroll"><table>
           <thead><tr><th>Date</th><th>Project</th><th>Plan</th><th>Status</th><th></th></tr></thead>
           <tbody id="workPlansBody"></tbody>
-        </table>
+        </table></div>
         <div id="workPlanDetail"></div>
       </section>
 
@@ -148,10 +150,10 @@
 
       <section class="panel" id="myreports">
         <div class="panel-head"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>My reports</h2><button class="secondary small" id="refreshReports">Refresh</button></div>
-        <table>
+        <div class="table-scroll"><table>
           <thead><tr><th>Date</th><th>Project</th><th>Completed</th><th>Status</th><th></th></tr></thead>
           <tbody id="reportsBody"></tbody>
-        </table>
+        </table></div>
         <div id="reportDetail"></div>
       </section>
     </main>
@@ -165,6 +167,7 @@ document.getElementById('whoName').textContent = session.name;
 document.getElementById('whoAvatar').textContent = (session.name || '?').split(' ').map(function (s) { return s[0]; }).join('').slice(0, 2).toUpperCase();
 document.getElementById('r_date').value = new Date().toISOString().slice(0, 10);
 setupSidebarTabs('overview');
+setupMobileSidebar();
 
 const submitToggle = setupFormToggle(document.getElementById('toggleSubmit'), document.getElementById('submitWrap'), "+ Submit today's report");
 const workPlanToggle = setupFormToggle(document.getElementById('toggleWorkPlan'), document.getElementById('workPlanWrap'), '+ Submit a plan');
