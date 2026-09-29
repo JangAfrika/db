@@ -8,6 +8,7 @@
 </head>
 <body>
 <div class="app-shell">
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
   <aside class="sidebar">
     <div class="sidebar-brand">
       <span class="logo">DB</span>
@@ -30,6 +31,7 @@
 
   <div class="main-col">
     <header class="topbar">
+      <button class="hamburger-btn" id="sidebarToggle" aria-label="Toggle menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
       <div class="topbar-title">
         <h1>Manager</h1>
         <p class="muted">Sites, projects, approvals &amp; completions</p>
@@ -54,10 +56,10 @@
           <div class="stat-card"><div class="label">Plans &amp; reports awaiting your approval</div><div class="value" id="statReportApprovals">—</div></div>
         </section>
         <h3 style="margin-top:22px">Recent projects</h3>
-        <table>
+        <div class="table-scroll"><table>
           <thead><tr><th>Name</th><th>Site</th><th>Status</th></tr></thead>
           <tbody id="overviewProjectsBody"></tbody>
-        </table>
+        </table></div>
       </section>
 
       <section class="panel" id="analytics">
@@ -99,10 +101,10 @@
           </form>
           <p id="siteError" class="error" hidden></p>
         </div>
-        <table>
+        <div class="table-scroll"><table>
           <thead><tr><th>Name</th><th>Location</th><th>Status</th></tr></thead>
           <tbody id="sitesBody"></tbody>
-        </table>
+        </table></div>
       </section>
 
       <section class="panel" id="projects">
@@ -128,10 +130,10 @@
           <p id="projectError" class="error" hidden></p>
         </div>
         <p class="muted" style="margin:-4px 0 12px">Projects you record here are approved & deployed immediately — no extra approval step for you. If the Admin secretary records one instead, it'll show up below needing your approval first.</p>
-        <table>
+        <div class="table-scroll"><table>
           <thead><tr><th>Name</th><th>Site</th><th>Budget</th><th>Status</th><th></th></tr></thead>
           <tbody id="projectsBody"></tbody>
-        </table>
+        </table></div>
 
         <div class="form-wrap" id="manageProjectWrap" hidden style="margin-top:18px">
           <h3 style="margin-top:0">Manage project — <span id="mp_name_label"></span></h3>
@@ -208,25 +210,25 @@
         <p class="muted" style="margin-top:-6px">These have already been reviewed by the Admin secretary.</p>
 
         <h3 style="margin-top:0">Daily work plans</h3>
-        <table>
+        <div class="table-scroll"><table>
           <thead><tr><th>Date</th><th>Project</th><th>Supervisor</th><th>Plan</th><th></th></tr></thead>
           <tbody id="workPlanApprovalsBody"></tbody>
-        </table>
+        </table></div>
 
         <h3 style="margin-top:22px">Daily reports</h3>
         <p class="muted" style="margin-top:-6px">Approving here is what lets the Admin secretary mark them completed.</p>
-        <table>
+        <div class="table-scroll"><table>
           <thead><tr><th>Date</th><th>Project</th><th>Supervisor</th><th>Next-day plan</th><th>Secretary's notes</th><th></th></tr></thead>
           <tbody id="reportApprovalsBody"></tbody>
-        </table>
+        </table></div>
       </section>
 
       <section class="panel" id="notices">
         <div class="panel-head"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Completion notices</h2><button class="secondary small" id="refreshNotices">Refresh</button></div>
-        <table>
+        <div class="table-scroll"><table>
           <thead><tr><th>Project</th><th>Flagged by</th><th>Notes</th><th>Status</th><th></th></tr></thead>
           <tbody id="noticesBody"></tbody>
-        </table>
+        </table></div>
       </section>
     </main>
   </div>
@@ -240,6 +242,7 @@ const session = requireRole('MANAGER');
 document.getElementById('whoName').textContent = session.name;
 document.getElementById('whoAvatar').textContent = (session.name || '?').split(' ').map(function (s) { return s[0]; }).join('').slice(0, 2).toUpperCase();
 setupSidebarTabs('overview');
+setupMobileSidebar();
 initAnalyticsTab();
 
 let sitesById = {}, usersById = {}, latestProjects = [], latestNotices = [], latestReportApprovals = [], latestWorkPlanApprovals = [], supervisors = [];
