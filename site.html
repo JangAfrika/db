@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Site — Dynamic Builders</title>
+<link rel="stylesheet" href="style.css">
+<script src="ga.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <a class="back-link" id="backLink" href="index.html">&larr; Back</a>
+  <div class="topbar-title">
+    <h1 id="siteName">Loading site…</h1>
+    <p class="muted" id="siteSub"></p>
+  </div>
+  <div class="topbar-actions">
+    <button class="secondary small" id="editSiteBtn" hidden>Edit</button>
+    <button class="secondary small" id="deleteSiteBtn" hidden>Delete</button>
+    <div class="user-chip">
+      <div class="avatar" id="whoAvatar"></div>
+      <div class="meta"><div class="n" id="whoName"></div><div class="r" id="whoRole"></div></div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <p id="loadError" class="error" hidden></p>
+
+  <section class="stat-grid" id="statGrid" hidden>
+    <div class="stat-card"><div class="label">Status</div><div class="value" id="statStatus">—</div></div>
+    <div class="stat-card"><div class="label">Projects</div><div class="value" id="statProjects">—</div></div>
+    <div class="stat-card"><div class="label">Supervisors assigned</div><div class="value" id="statSupervisors">—</div></div>
+    <div class="stat-card"><div class="label">Productivity targets</div><div class="value" id="statTargets">—</div></div>
+  </section>
+
+  <section class="panel" id="detailsPanel" hidden>
+    <div class="panel-head"><h2>Site details</h2></div>
+    <div class="info-grid" id="siteInfoGrid"></div>
+    <h3 style="margin-top:18px">Notes</h3>
+    <p id="siteNotes" class="muted"></p>
+  </section>
+
+  <section class="panel" id="projectsPanel" hidden>
+    <div class="panel-head"><h2>Projects at this site</h2></div>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Project</th><th>Supervisor</th><th>Budget</th><th>Status</th></tr></thead>
+      <tbody id="projectsBody"></tbody>
+    </table></div>
+  </section>
+
+  <section class="panel" id="targetsPanel" hidden>
+    <div class="panel-head"><h2>Productivity targets</h2></div>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Trade</th><th>Daily target</th></tr></thead>
+      <tbody id="targetsBody"></tbody>
+    </table></div>
+  </section>
+
+  <section class="panel" id="reviewsPanel" hidden>
+    <div class="panel-head"><h2>Weekly &amp; monthly reviews</h2></div>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Type</th><th>Period</th><th>Summary</th><th></th></tr></thead>
+      <tbody id="reviewsBody"></tbody>
+    </table></div>
+  </section>
+</main>
+
+<script src="config.js"></script>
+<script src="dialog.js"></script>
+<script>
+const session = requireSession();
+if (typeof gaTrackRole === 'function') gaTrackRole(session.role);
+document.getElementById('whoName').textContent = session.name;
+document.getElementById('whoRole').textContent = ROLE_LABELS[session.role] || session.role;
+document.getElementById('whoAvatar').textContent = (session.name || '?').split(' ').map(function (s) { return s[0]; }).join('').slice(0, 2).toUpperCase();
+document.getElementById('backLink').href = backLinkHref(session);
+
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const canSeeUsers = ['IT_ADMIN', 'MANAGER', 'ADMIN_SECRETARY'].indexOf(session.role) !== -1;
+const params = new URLSearchParams(window.location.search);
+const siteId = params.get('id');
+
+let bundleCache = null;
+
+function nice(s) { return s ? String(s).replace(/_/g, ' ') : ''; }
+function cap(s) { s = nice(s); return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+
+async function init() {
+  if (!siteId) {
+    document.getElementById('loadError').textContent = 'No site specified.';
+    document.getElementById('loadError').hidden = false;
+    return;
+  }
+  try {
+    bundleCache = await apiCall('getSiteOverview', { siteId: siteId });
+    render();
+  } catch (err) {
+    document.getElementById('loadError').textContent = err.message;
+    document.getElementById('loadError').hidden = false;
+  }
+}
+
+function render() {
+  const s = bundleCache.site;
+  document.title = 'Site — ' + s.name + ' — Dynamic Builders';
+  document.getElementById('siteName').textContent = s.name;
+  document.getElementById('siteSub').textContent = s.location + (s.site_type ? ' · ' + cap(s.site_type) : '');
+
+  document.getElementById('statStatus').textContent = cap(s.status) || '—';
+  document.getElementById('statProjects').textContent = bundleCache.projects.length;
+  const supervisorIds = {};
+  bundleCache.assignments.forEach(function (a) { if (a.status !== 'unassigned') supervisorIds[a.supervisor_id] = true; });
+  document.getElementById('statSupervisors').textContent = Object.keys(supervisorIds).length;
+  document.getElementById('statTargets').textContent = bundleCache.targets.length;
+  document.getElementById('statGrid').hidden = false;
+
+  const grid = document.getElementById('siteInfoGrid');
+  grid.innerHTML = '';
+  function item(label, value, link) {
+    grid.appendChild(el('div', { class: 'info-item' }, [el('div', { class: 'label', text: label }), el('div', { class: 'val' }, [link || document.createTextNode(value || '—')])]));
+  }
+  item('Location', s.location);
+  item('Address', s.address);
+  item('Client / consultant', bundleCache.client ? bundleCache.client.name : (s.client_name || '—'), bundleCache.client ? clientLink(bundleCache.client.id, bundleCache.client.name) : null);
+  item('Site type', cap(s.site_type));
+  item('GPS coordinates', s.gps_coords, gpsLink(s.gps_coords, s.id));
+  item('Start date', s.start_date ? fmtDate(s.start_date) : '—');
+  item('Status', cap(s.status));
+  item('Site manager', bundleCache.manager ? bundleCache.manager.name : '—', (bundleCache.manager && canSeeUsers) ? userLink(bundleCache.manager.id, bundleCache.manager.name) : null);
+  document.getElementById('siteNotes').textContent = s.notes || 'No notes recorded.';
+  document.getElementById('detailsPanel').hidden = false;
+
+  // Edit: Manager/Admin Secretary (capped at 3 edits — see updateSite() in
+  // Auth.gs) and IT Admin (unrestricted). Delete: IT Admin only.
+  const editBtn = document.getElementById('editSiteBtn');
+  editBtn.hidden = !canSeeUsers;
+  if (canSeeUsers) {
+    const used = Number(s.edit_count) || 0;
+    editBtn.textContent = session.role === 'IT_ADMIN' ? 'Edit' : (used >= 3 ? 'Edit (limit reached)' : 'Edit (' + (3 - used) + ' left)');
+    editBtn.onclick = function () { editSiteHere(s); };
+  }
+  const deleteBtn = document.getElementById('deleteSiteBtn');
+  deleteBtn.hidden = session.role !== 'IT_ADMIN';
+  deleteBtn.onclick = function () { deleteSiteHere(s); };
+
+  const assignmentsByProject = {};
+  bundleCache.assignments.forEach(function (a) { assignmentsByProject[a.project_id] = a; });
+
+  const pBody = document.getElementById('projectsBody');
+  pBody.innerHTML = '';
+  if (!bundleCache.projects.length) {
+    pBody.appendChild(el('tr', {}, [el('td', { colspan: '4', class: 'empty', text: 'No projects recorded at this site yet.' })]));
+  } else {
+    bundleCache.projects.forEach(function (p) {
+      const a = assignmentsByProject[p.id];
+      pBody.appendChild(el('tr', {}, [
+        el('td', {}, [projectLink(p.id, p.name)]),
+        el('td', { text: a ? (a.supervisor_id || '—') : '—' }),
+        el('td', { text: p.budget || '—' }),
+        el('td', {}, [el('span', { class: 'status ' + p.status, text: nice(p.status) })])
+      ]));
+    });
+  }
+  document.getElementById('projectsPanel').hidden = false;
+
+  const tBody = document.getElementById('targetsBody');
+  tBody.innerHTML = '';
+  if (!bundleCache.targets.length) {
+    tBody.appendChild(el('tr', {}, [el('td', { colspan: '2', class: 'empty', text: 'No productivity targets set for this site yet.' })]));
+  } else {
+    bundleCache.targets.forEach(function (t) {
+      tBody.appendChild(el('tr', {}, [el('td', { text: t.trade }), el('td', { text: t.daily_target + ' ' + t.unit + '/day' })]));
+    });
+  }
+  document.getElementById('targetsPanel').hidden = false;
+
+  const rBody = document.getElementById('reviewsBody');
+  rBody.innerHTML = '';
+  const weekly = bundleCache.weeklyReviews.map(function (r) {
+    return { type: 'Weekly', period: fmtDate(r.week_start) + ' – ' + fmtDate(r.week_end), summary: r.summary, link: weeklyReviewLink(r.id, 'Open') };
+  });
+  const monthly = bundleCache.monthlyReviews.map(function (r) {
+    return { type: 'Monthly', period: (MONTH_NAMES[r.month - 1] || r.month) + ' ' + r.year, summary: r.summary, link: monthlyReviewLink(r.id, 'Open') };
+  });
+  const allReviews = weekly.concat(monthly);
+  if (!allReviews.length) {
+    rBody.appendChild(el('tr', {}, [el('td', { colspan: '4', class: 'empty', text: 'No reviews recorded for this site yet.' })]));
+  } else {
+    allReviews.forEach(function (r) {
+      rBody.appendChild(el('tr', {}, [
+        el('td', { text: r.type }),
+        el('td', { text: r.period }),
+        el('td', { text: r.summary || '—' }),
+        el('td', {}, [r.link])
+      ]));
+    });
+  }
+  document.getElementById('reviewsPanel').hidden = false;
+}
+
+async function resolveAssignmentNames() {
+  // Second pass: fill supervisor names on the projects table once USERS is
+  // available, without blocking the first paint on it for roles that can't
+  // see USERS anyway.
+  if (!canSeeUsers || !bundleCache) return;
+  try {
+    const users = byId(await apiCall('list', { table: 'USERS' }));
+    const assignmentsByProject = {};
+    bundleCache.assignments.forEach(function (a) { assignmentsByProject[a.project_id] = a; });
+    const rows = Array.from(document.querySelectorAll('#projectsBody tr'));
+    bundleCache.projects.forEach(function (p, i) {
+      const a = assignmentsByProject[p.id];
+      const u = a ? users[a.supervisor_id] : null;
+      const cell = rows[i] && rows[i].children[1];
+      if (cell && u) { cell.innerHTML = ''; cell.appendChild(userLink(u.id, u.name)); }
+    });
+  } catch (e) { /* non-critical enrichment */ }
+}
+
+async function editSiteHere(s) {
+  const unrestricted = session.role === 'IT_ADMIN';
+  const used = Number(s.edit_count) || 0;
+  let managerOptions = [];
+  try {
+    const users = await apiCall('list', { table: 'USERS' });
+    managerOptions = users.filter(function (u) { return u.role === 'MANAGER' || u.role === 'ADMIN_SECRETARY'; })
+      .map(function (u) { return { value: u.id, label: u.name }; });
+  } catch (e) { /* non-critical — manager dropdown just stays short */ }
+  const clients = await apiCall('list', { table: 'CLIENTS' }).catch(function () { return []; });
+
+  const values = await uiForm({
+    title: 'Edit site',
+    message: unrestricted ? 'IT Admin edits are unrestricted.' : (used >= 3 ? 'This site has used all 3 Manager/Admin Secretary edits — only IT Admin can change it now.' : ('Edit ' + (3 - used) + ' of 3 remaining.')),
+    okText: 'Save changes',
+    fields: [
+      { key: 'name', label: 'Site name', value: s.name },
+      { key: 'location', label: 'Location', value: s.location },
+      { key: 'address', label: 'Address', required: false, value: s.address || '' },
+      { key: 'client_id', label: 'Client / consultant', type: 'select', required: false, value: s.client_id || '', options: clientSelectOptions(clients) },
+      { key: 'site_type', label: 'Site type', required: false, value: s.site_type || '', placeholder: 'residential, commercial, road…' },
+      { key: 'gps_coords', label: 'GPS coordinates', required: false, value: s.gps_coords || '', hint: 'e.g. 6.5244, 3.3792 — or a Plus Code like ABCD+123, City. Shown as a clickable map link.' },
+      { key: 'start_date', label: 'Start date', type: 'date', required: false, value: s.start_date || '' },
+      { key: 'site_manager_id', label: 'Site manager', type: 'select', required: false, value: s.site_manager_id || '', options: [{ value: '', label: '— none —' }].concat(managerOptions) },
+      { key: 'status', label: 'Status', type: 'select', value: s.status, options: [{ value: 'active', label: 'Active' }, { value: 'inactive', label: 'Inactive' }] },
+      { key: 'notes', label: 'Notes', multiline: true, required: false, value: s.notes || '' }
+    ]
+  });
+  if (!values) return;
+  if (values.client_id === '__new__') {
+    const newClient = await addClientFlow(session);
+    values.client_id = newClient ? newClient.id : '';
+  }
+  try {
+    await apiCall('updateSite', Object.assign({ siteId: s.id }, values));
+    init();
+  } catch (err) {
+    await uiAlert(err.message, { title: 'Could not save changes', danger: true });
+  }
+}
+
+async function deleteSiteHere(s) {
+  if (!await uiConfirm('Permanently delete "' + s.name + '"? This can\'t be undone. Projects already recorded at this site are kept but will no longer link to a live site.', { title: 'Delete site?', danger: true, okText: 'Delete' })) return;
+  try {
+    await apiCall('deleteSite', { siteId: s.id });
+    window.location.href = backLinkHref(session);
+  } catch (err) {
+    await uiAlert(err.message, { title: 'Something went wrong', danger: true });
+  }
+}
+
+init().then(resolveAssignmentNames);
+</script>
+</body>
+</html>

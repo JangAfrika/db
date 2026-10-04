@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Create account — Dynamic Builders</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="ga.js"></script>
+</head>
+
+<body class="centered">
+  <form id="registerForm" class="card">
+    <div class="brand-mark"><span class="logo">DB</span> <strong>Dynamic Builders</strong></div>
+    <p class="muted" style="margin-bottom:20px">Create an account — an IT admin reviews and approves every new account
+      before it can do anything.</p>
+
+    <label>Full name
+      <input type="text" id="r_name" required autocomplete="name">
+    </label>
+    <label>Email
+      <input type="email" id="r_email" required autocomplete="username">
+    </label>
+    <label>Phone <span class="dlg-optional">(optional)</span>
+      <input type="tel" id="r_phone" autocomplete="tel">
+    </label>
+    <label>I'm applying as
+      <select id="r_role">
+        <option value="">— not sure / let IT admin decide —</option>
+      </select>
+    </label>
+    <label>Password
+      <input type="password" id="r_password" required autocomplete="new-password" minlength="6">
+    </label>
+    <label>Confirm password
+      <input type="password" id="r_password2" required autocomplete="new-password" minlength="6">
+    </label>
+
+    <div style="display:flex; align-items:center; gap:14px">
+      <button type="submit" style="flex:1">Create account</button>
+      <a class="btn-link" href="index.html" style="white-space:nowrap">Log in</a>
+    </div>
+    <p id="error" class="error" hidden></p>
+  </form>
+
+  <form id="doneCard" class="card" hidden>
+    <div class="brand-mark"><span class="logo">DB</span> <strong>Dynamic Builders</strong></div>
+    <p style="margin-top:12px">Almost there — we've sent a verification link to <strong id="doneEmail"></strong>. Click
+      it to confirm your email, then come back and log in.</p>
+    <p class="muted" style="margin-top:10px">Once verified you can log in, but you'll only see your own profile until an
+      IT admin reviews your account and assigns you a role — they'll email you when that happens.</p>
+    <p class="muted" style="margin-top:16px">Link never arrived? <a href="#" id="resendLink">Resend verification
+        email</a></p>
+    <a class="btn-link" href="index.html" style="display:block; margin-top:14px; text-align:center">Back to login</a>
+  </form>
+
+  <script src="config.js"></script>
+  <script src="dialog.js"></script>
+  <script>
+    const roleSelect = document.getElementById('r_role');
+    ROLE_OPTIONS.forEach(function (o) {
+      const opt = document.createElement('option');
+      opt.value = o.value;
+      opt.textContent = o.label;
+      roleSelect.appendChild(opt);
+    });
+
+    document.getElementById('registerForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const errorEl = document.getElementById('error');
+      errorEl.hidden = true;
+
+      const name = document.getElementById('r_name').value.trim();
+      const email = document.getElementById('r_email').value.trim();
+      const phone = document.getElementById('r_phone').value.trim();
+      const requestedRole = document.getElementById('r_role').value;
+      const password = document.getElementById('r_password').value;
+      const password2 = document.getElementById('r_password2').value;
+
+      if (password !== password2) {
+        showError(errorEl, {message: 'Passwords don\'t match.'});
+        return;
+      }
+
+      try {
+        await apiCall('registerAccount', {name: name, email: email, phone: phone, requestedRole: requestedRole, password: password});
+        document.getElementById('registerForm').hidden = true;
+        document.getElementById('doneEmail').textContent = email;
+        document.getElementById('doneCard').hidden = false;
+        document.getElementById('resendLink').dataset.email = email;
+      } catch (err) {
+        showError(errorEl, err);
+      }
+    });
+
+    document.getElementById('resendLink').addEventListener('click', async function (e) {
+      e.preventDefault();
+      const email = e.target.dataset.email;
+      e.target.textContent = 'Sending…';
+      try {
+        await apiCall('resendVerification', {email: email});
+        await uiAlert('If that address is awaiting verification, a new link is on its way — check your inbox (and spam folder).', {title: 'Verification email sent'});
+      } catch (err) {
+        await uiAlert(err.message, {title: 'Something went wrong', danger: true});
+      } finally {
+        e.target.textContent = 'Resend verification email';
+      }
+    });
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KPI — Dynamic Builders</title>
+<link rel="stylesheet" href="style.css">
+<script src="ga.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <a class="back-link" id="backLink" href="index.html">&larr; Back</a>
+  <div class="topbar-title">
+    <h1 id="kpiTitle">Loading KPI…</h1>
+    <p class="muted" id="kpiSub"></p>
+  </div>
+  <div class="topbar-actions">
+    <select id="kpiRange">
+      <option value="4">Last 4 weeks</option>
+      <option value="8" selected>Last 8 weeks</option>
+      <option value="12">Last 12 weeks</option>
+      <option value="26">Last 26 weeks</option>
+    </select>
+    <button class="secondary small" id="printKpiBtn" hidden>Print</button>
+    <div class="user-chip">
+      <div class="avatar" id="whoAvatar"></div>
+      <div class="meta"><div class="n" id="whoName"></div><div class="r" id="whoRole"></div></div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <p id="loadError" class="error" hidden></p>
+  <div id="kpiRoot"></div>
+</main>
+
+<div id="printArea"></div>
+
+<script src="config.js"></script>
+<script src="dialog.js"></script>
+<script src="charts.js"></script>
+<script src="analytics.js"></script>
+<script>
+const session = requireSession();
+if (typeof gaTrackRole === 'function') gaTrackRole(session.role);
+document.getElementById('whoName').textContent = session.name;
+document.getElementById('whoRole').textContent = ROLE_LABELS[session.role] || session.role;
+document.getElementById('whoAvatar').textContent = (session.name || '?').split(' ').map(function (s) { return s[0]; }).join('').slice(0, 2).toUpperCase();
+document.getElementById('backLink').href = backLinkHref(session);
+
+const canViewOthers = ['IT_ADMIN', 'MANAGER', 'ADMIN_SECRETARY'].indexOf(session.role) !== -1;
+const params = new URLSearchParams(window.location.search);
+const targetUserId = params.get('userId') || session.userId;
+
+const authorized = targetUserId === session.userId || canViewOthers;
+if (!authorized) {
+  document.getElementById('kpiRoot').appendChild(el('p', { class: 'error', text: 'You are not able to view another user\'s KPI.' }));
+}
+
+let kpiCache = null;
+let lastKpiSnapshot = null; // filled by render(), read by printKpi()
+
+function nice(s) { return s ? String(s).replace(/_/g, ' ') : ''; }
+
+async function load() {
+  try {
+    const calls = [
+      apiCall('getUserProfile', { userId: targetUserId }),
+      apiCall('list', { table: 'WORK_PLANS' }),
+      apiCall('list', { table: 'DAILY_REPORTS' }),
+      apiCall('list', { table: 'PROJECT_ASSIGNMENTS' }),
+      apiCall('list', { table: 'PROJECTS' }),
+      apiCall('list', { table: 'SUPERVISOR_EVALUATIONS' }),
+      apiCall('list', { table: 'MONTHLY_REVIEWS' })
+    ];
+    const [profile, plans, reports, assignments, projects, evaluations, monthlyReviews] = await Promise.all(calls);
+    kpiCache = { profile: profile, plans: plans, reports: reports, assignments: assignments, projects: projects, evaluations: evaluations, monthlyReviews: monthlyReviews };
+    draw();
+  } catch (err) {
+    document.getElementById('loadError').textContent = err.message;
+    document.getElementById('loadError').hidden = false;
+  }
+}
+
+function draw() {
+  if (!kpiCache) return;
+  const n = parseInt(document.getElementById('kpiRange').value, 10);
+  try {
+    render(kpiCache, n);
+  } catch (err) {
+    document.getElementById('kpiRoot').innerHTML = '';
+    document.getElementById('kpiRoot').appendChild(el('p', { class: 'error', text: 'Could not draw KPI: ' + err.message }));
+  }
+}
+
+function render(data, n) {
+  const u = data.profile.user;
+  document.title = u.name + ' — KPI — Dynamic Builders';
+  document.getElementById('kpiTitle').textContent = u.name + ' — KPI';
+  document.getElementById('kpiSub').textContent = (ROLE_LABELS[u.role] || u.role) + ' · ' + u.email;
+
+  const root = document.getElementById('kpiRoot');
+  root.innerHTML = '';
+
+  const today = anKey(new Date());
+  const allWeeks = anBuildWeeks(n * 2);
+  const weeks = allWeeks.slice(n);
+  const labels = weeks.map(anLabel);
+  function inRange(day) { return day && day >= weeks[0]; }
+  function planDay(p) { return anDayKey(p.plan_date); }
+  function reportDay(r) { return anDayKey(r.report_date); }
+
+  const myPlans = data.plans.filter(function (p) { return p.supervisor_id === u.id; });
+  const myReports = data.reports.filter(function (r) { return r.supervisor_id === u.id; });
+  const plansIn = myPlans.filter(function (p) { return inRange(planDay(p)); });
+  const reportsIn = myReports.filter(function (r) { return inRange(reportDay(r)); });
+
+  const reportKeys = {};
+  myReports.forEach(function (r) { reportKeys[r.project_id + '|' + reportDay(r)] = true; });
+  const due = plansIn.filter(function (p) { return planDay(p) < today; });
+  const followed = due.filter(function (p) { return reportKeys[p.project_id + '|' + planDay(p)]; }).length;
+  const followThrough = due.length ? Math.round((followed / due.length) * 100) : null;
+
+  let last = '';
+  myPlans.forEach(function (p) { if (planDay(p) > last) last = planDay(p); });
+  myReports.forEach(function (r) { if (reportDay(r) > last) last = reportDay(r); });
+  const daysSince = last ? Math.max(0, Math.floor((anParseKey(today) - anParseKey(last)) / 86400000)) : null;
+
+  const projectsById = byId(data.projects);
+  const held = data.assignments.filter(function (a) { return a.supervisor_id === u.id && a.status === 'assigned'; }).length;
+
+  const workforceVals = reportsIn.map(function (r) { return anNum(r.total_workforce); }).filter(function (v) { return v > 0; });
+  const avgWorkforce = anAvg(workforceVals);
+  const toolboxYes = reportsIn.filter(function (r) { return r.toolbox_talk === true || r.toolbox_talk === 'true'; }).length;
+  const ppeSet = reportsIn.filter(function (r) { return r.ppe_compliance; }), ppeGood = ppeSet.filter(function (r) { return r.ppe_compliance === 'good'; }).length;
+  const qualitySet = reportsIn.filter(function (r) { return r.quality_inspection; }), qualityGood = qualitySet.filter(function (r) { return r.quality_inspection === 'passed'; }).length;
+  const withProblems = reportsIn.filter(function (r) { return r.problems_delays && String(r.problems_delays).trim(); }).length;
+
+  let state = 'inactive', stateLabel = 'no submissions yet';
+  if (daysSince !== null) {
+    if (daysSince <= 2) { state = 'active'; stateLabel = 'active'; }
+    else if (daysSince <= 7) { state = 'pending'; stateLabel = 'quiet'; }
+    else { state = 'inactive'; stateLabel = 'inactive'; }
+  }
+
+  // ---- stat cards ----
+  const statGrid = el('div', { class: 'stat-grid' });
+  statGrid.appendChild(anStat('Projects held', held));
+  statGrid.appendChild(anStat('Work plans (period)', plansIn.length));
+  statGrid.appendChild(anStat('Daily reports (period)', reportsIn.length));
+  statGrid.appendChild(anStat('Follow-through', followThrough === null ? '—' : followThrough + '%'));
+  statGrid.appendChild(anStat('Avg workforce', avgWorkforce === null ? '—' : avgWorkforce.toFixed(1)));
+  const activityCard = el('div', { class: 'stat-card' }, [
+    el('div', { class: 'label', text: 'Activity' }),
+    el('div', { class: 'value' }, [el('span', { class: 'status ' + state, text: stateLabel })])
+  ]);
+  statGrid.appendChild(activityCard);
+  root.appendChild(statGrid);
+
+  // ---- compliance donuts ----
+  const grid1 = el('div', { class: 'chart-grid' });
+  let c = anCard('Toolbox talk completed', 'Share of this period\'s reports');
+  donutChart(c.body, { data: [{ label: 'Completed', value: toolboxYes, color: AN_GOOD }, { label: 'Missed', value: reportsIn.length - toolboxYes, color: AN_DANGER }], centerLabel: 'reports', emptyText: 'No daily reports in this period.' });
+  grid1.appendChild(c.card);
+
+  c = anCard('PPE compliance', 'Of reports where PPE was recorded');
+  donutChart(c.body, { data: [{ label: 'Good', value: ppeGood, color: AN_GOOD }, { label: 'Issue', value: ppeSet.length - ppeGood, color: AN_DANGER }], centerLabel: 'reports', emptyText: 'PPE compliance was not recorded in this period.' });
+  grid1.appendChild(c.card);
+
+  c = anCard('Quality inspection', 'Of reports where an inspection was recorded');
+  donutChart(c.body, { data: [{ label: 'Passed', value: qualityGood, color: AN_GOOD }, { label: 'Action needed', value: qualitySet.length - qualityGood, color: AN_DANGER }], centerLabel: 'reports', emptyText: 'No quality inspections recorded in this period.' });
+  grid1.appendChild(c.card);
+  root.appendChild(grid1);
+
+  // ---- weekly activity line ----
+  const grid2 = el('div', { class: 'chart-grid' });
+  c = anCard('Weekly activity', 'Plans + reports combined, last ' + n + ' weeks', true);
+  lineChart(c.body, { labels: labels, emptyText: 'No activity in this period.', series: [{ name: u.name, color: CHART_COLORS[0], values: anCount(plansIn.concat(reportsIn), function (row) { return row.plan_date || row.report_date; }, weeks) }] });
+  if (reportsIn.length) c.card.appendChild(el('p', { class: 'analytics-note', text: withProblems + ' of ' + reportsIn.length + ' reports in this period logged a problem or delay (' + anPct(withProblems, reportsIn.length) + '%).' }));
+  grid2.appendChild(c.card);
+  root.appendChild(grid2);
+
+  // ---- assigned projects ----
+  if (data.profile.assignedProjects && data.profile.assignedProjects.length) {
+    const projPanel = el('div', { class: 'panel' }, [el('div', { class: 'panel-head' }, [el('h2', { text: 'Assigned projects' })])]);
+    const tbl = el('table', {}, [
+      el('thead', {}, [el('tr', {}, [el('th', { text: 'Project' }), el('th', { text: 'Assigned at' }), el('th', { text: 'Status' })])]),
+      el('tbody', {}, data.profile.assignedProjects.map(function (a) {
+        return el('tr', {}, [
+          el('td', {}, [a.project ? projectLink(a.project.id, a.project.name) : document.createTextNode(a.project_id || '—')]),
+          el('td', { text: fmtDate(a.assigned_at) }),
+          el('td', {}, [el('span', { class: 'status ' + a.status, text: nice(a.status) })])
+        ]);
+      }))
+    ]);
+    projPanel.appendChild(el('div', { class: 'table-scroll' }, [tbl]));
+    root.appendChild(projPanel);
+  }
+
+  // ---- supervisor evaluations (scored by a Manager, tied to a monthly review) ----
+  const myEvaluations = data.evaluations.filter(function (ev) { return ev.user_id === u.id; });
+  if (myEvaluations.length) {
+    const monthlyById = byId(data.monthlyReviews);
+    const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const evalPanel = el('div', { class: 'panel' }, [el('div', { class: 'panel-head' }, [el('h2', { text: 'Supervisor evaluations' })])]);
+    const tbl = el('table', {}, [
+      el('thead', {}, [el('tr', {}, [el('th', { text: 'Review' }), el('th', { text: 'Score' }), el('th', { text: 'Notes' })])]),
+      el('tbody', {}, myEvaluations.slice().reverse().map(function (ev) {
+        const review = monthlyById[ev.monthly_review_id];
+        return el('tr', {}, [
+          el('td', { text: review ? (MONTH_NAMES[review.month - 1] + ' ' + review.year) : (ev.monthly_review_id || '—') }),
+          el('td', { text: ev.score }),
+          el('td', { text: ev.notes || '—' })
+        ]);
+      }))
+    ]);
+    evalPanel.appendChild(el('div', { class: 'table-scroll' }, [tbl]));
+    root.appendChild(evalPanel);
+  }
+
+  root.appendChild(el('p', { class: 'muted', text: 'Active = submitted within 2 days · Quiet = 3–7 days · Inactive = more than 7 days ago. Follow-through = share of past work plans in the period that got an end-of-day report the same day.' }));
+
+  // Snapshot of everything printKpi() needs, so printing never has to
+  // recompute these figures from scratch or risk drifting from what's on
+  // screen.
+  lastKpiSnapshot = {
+    user: u, n: n, held: held, plansCount: plansIn.length, reportsCount: reportsIn.length,
+    followThrough: followThrough, avgWorkforce: avgWorkforce, stateLabel: stateLabel,
+    toolboxYes: toolboxYes, reportsInLength: reportsIn.length,
+    ppeGood: ppeGood, ppeSetLength: ppeSet.length,
+    qualityGood: qualityGood, qualitySetLength: qualitySet.length,
+    withProblems: withProblems,
+    evaluations: data.evaluations.filter(function (ev) { return ev.user_id === u.id; })
+  };
+  document.getElementById('printKpiBtn').hidden = session.role !== 'IT_ADMIN';
+}
+
+// ---------- printable document ----------
+//
+// Same #printArea / doPrint pattern used elsewhere (it-admin.html,
+// user.html, project.html). IT Admin only, per "print KPI for all the
+// users" — prints whichever user's KPI is currently loaded, for the
+// currently selected week range.
+function printHead(kind) {
+  return el('div', { class: 'print-head' }, [
+    el('h1', { text: 'Dynamic Builders' }),
+    el('p', { text: kind })
+  ]);
+}
+
+function printFieldTable(pairs) {
+  const rows = [];
+  for (let i = 0; i < pairs.length; i += 2) {
+    const a = pairs[i], b = pairs[i + 1];
+    const cells = [el('td', { class: 'pf-label', text: a[0] }), el('td', { text: a[1] || '—' })];
+    if (b) cells.push(el('td', { class: 'pf-label', text: b[0] }), el('td', { text: b[1] || '—' }));
+    else cells.push(el('td', { class: 'pf-label' }), el('td', {}));
+    rows.push(el('tr', {}, cells));
+  }
+  return el('table', { class: 'print-field-table' }, [el('tbody', {}, rows)]);
+}
+
+function doPrint(docEl) {
+  const area = document.getElementById('printArea');
+  area.innerHTML = '';
+  area.appendChild(el('div', { class: 'print-doc' }, [docEl]));
+  document.body.classList.add('printing');
+  window.print();
+}
+window.addEventListener('afterprint', function () { document.body.classList.remove('printing'); });
+
+function printKpi() {
+  if (!lastKpiSnapshot) return;
+  const s = lastKpiSnapshot;
+  const u = s.user;
+  const doc = el('div', {}, [
+    printHead('KPI summary — last ' + s.n + ' weeks'),
+    printFieldTable([
+      ['Name', u.name], ['Role', ROLE_LABELS[u.role] || u.role],
+      ['Email', u.email], ['Activity', s.stateLabel],
+      ['Projects held', String(s.held)], ['Work plans (period)', String(s.plansCount)],
+      ['Daily reports (period)', String(s.reportsCount)], ['Follow-through', s.followThrough === null ? '—' : s.followThrough + '%'],
+      ['Avg workforce', s.avgWorkforce === null ? '—' : s.avgWorkforce.toFixed(1)],
+      ['Problems/delays logged', s.reportsInLength ? (s.withProblems + ' of ' + s.reportsInLength) : '—']
+    ]),
+    el('h2', { text: 'Compliance' }),
+    printFieldTable([
+      ['Toolbox talk completed', s.reportsInLength ? (s.toolboxYes + ' of ' + s.reportsInLength) : 'No reports'],
+      ['PPE compliance', s.ppeSetLength ? (s.ppeGood + ' of ' + s.ppeSetLength) : 'Not recorded'],
+      ['Quality inspection passed', s.qualitySetLength ? (s.qualityGood + ' of ' + s.qualitySetLength) : 'Not recorded']
+    ]),
+    s.evaluations.length ? el('div', {}, [
+      el('h2', { text: 'Supervisor evaluations' }),
+      el('table', {}, [
+        el('thead', {}, [el('tr', {}, [el('th', { text: 'Score' }), el('th', { text: 'Notes' })])]),
+        el('tbody', {}, s.evaluations.map(function (ev) {
+          return el('tr', {}, [el('td', { text: ev.score }), el('td', { text: ev.notes || '—' })]);
+        }))
+      ])
+    ]) : el('span'),
+    el('p', { class: 'muted', text: 'Printed: ' + new Date().toLocaleString() + ' by ' + session.name })
+  ]);
+  doPrint(doc);
+}
+document.getElementById('printKpiBtn').addEventListener('click', printKpi);
+
+document.getElementById('kpiRange').addEventListener('change', draw);
+if (authorized) load();
+</script>
+</body>
+</html>
