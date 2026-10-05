@@ -1,6 +1,6 @@
 {
   "name": "Dynamic Builders",
-  "short_name": "Dyn. Builders",
+  "short_name": "DB",
   "description": "Dynamic Builders — site reporting system",
   "start_url": "index.html",
   "scope": "./",
