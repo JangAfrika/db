@@ -5,7 +5,7 @@
 // Code.gs/Auth.gs (Deploy > New deployment > Web app > Execute as Me,
 // Who has access: Anyone). It will look like:
 // https://script.google.com/macros/s/XXXXXXXXXXXXXXXXXXXX/exec
-const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbw7IqNzwPbLqm9wsbtySPdSna7swTsOURIAsMYOpB401HzhG_A6tMzg8o4UySyAhCMjoQ/exec';
+const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxpi-P7k6dQZ6XGot4mcMxUwNkA0wLJNaTJGPmRaVYWx6Be5J6aE9GRtc-R-0-vmEYESQ/exec';
 
 // Where index.html sends each role after a successful login.
 const ROLE_PAGES = {
