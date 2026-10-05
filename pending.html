@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Awaiting approval — Dynamic Builders</title>
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="logo.png">
+<link rel="apple-touch-icon" href="logo.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#101a2e">
+<script src="ga.js"></script>
+<script src="pwa.js"></script>
+</head>
+<body class="centered">
+<div class="card" style="max-width:460px">
+  <div class="brand-mark"><img class="logo" src="logo.png" alt="Dynamic Builders logo"> <strong>Dynamic Builders</strong></div>
+
+  <div class="info-grid" style="margin-top:18px">
+    <div class="info-item"><div class="label">Name</div><div class="val" id="pName">—</div></div>
+    <div class="info-item"><div class="label">Email</div><div class="val" id="pEmail">—</div></div>
+    <div class="info-item"><div class="label">Phone</div><div class="val" id="pPhone">—</div></div>
+    <div class="info-item"><div class="label">Applying as</div><div class="val" id="pRole">—</div></div>
+  </div>
+
+  <p style="margin-top:20px"><span class="status pending_approval">awaiting approval</span></p>
+  <p class="muted" style="margin-top:10px">Your email is verified. An IT admin still needs to review your account and assign you a role before you can use the rest of the system — you'll get an email as soon as that happens.</p>
+
+  <div style="display:flex; gap:10px; margin-top:20px">
+    <button class="secondary" id="refreshBtn" style="flex:1">Refresh status</button>
+    <button class="secondary" id="logoutBtn" style="flex:1">Log out</button>
+  </div>
+  <p id="error" class="error" style="margin-top:14px" hidden></p>
+</div>
+
+<script src="config.js"></script>
+<script src="dialog.js"></script>
+<script>
+const session = requirePendingSession();
+
+// A role already on the session means this account was approved since the
+// last login (e.g. approved in another tab, or a stale bookmark) — send
+// them straight to their real dashboard instead of showing this page.
+if (session.role) {
+  window.location.href = ROLE_PAGES[session.role] || 'index.html';
+}
+
+async function load() {
+  const errorEl = document.getElementById('error');
+  errorEl.hidden = true;
+  try {
+    const profile = await apiCall('getUserProfile', { userId: session.userId });
+    const u = profile.user;
+    document.getElementById('pName').textContent = u.name;
+    document.getElementById('pEmail').textContent = u.email;
+    document.getElementById('pPhone').textContent = u.phone || '—';
+    document.getElementById('pRole').textContent = u.requested_role ? (ROLE_LABELS[u.requested_role] || u.requested_role) : 'Not specified — IT admin will decide';
+
+    if (u.status === 'active' && u.role) {
+      // Approved just now — refresh the session's role/name and move on.
+      sessionStorage.setItem('role', u.role);
+      sessionStorage.setItem('name', u.name);
+      window.location.href = ROLE_PAGES[u.role] || 'index.html';
+    }
+  } catch (err) {
+    showError(errorEl, err);
+  }
+}
+load();
+
+document.getElementById('refreshBtn').addEventListener('click', load);
+document.getElementById('logoutBtn').addEventListener('click', function () { logout(); });
+</script>
+</body>
+</html>

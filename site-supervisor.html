@@ -1,0 +1,767 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Site supervisor — Dynamic Builders</title>
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="logo.png">
+<link rel="apple-touch-icon" href="logo.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#101a2e">
+<script src="ga.js"></script>
+<script src="pwa.js"></script>
+</head>
+<body>
+<div class="app-shell">
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <img class="logo" src="logo.png" alt="Dynamic Builders logo">
+      <span class="name">Dynamic Builders<span class="role">Site supervisor</span></span>
+    </div>
+    <div class="sidebar-label">Sections</div>
+    <a class="nav-item" href="#overview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>Overview</a>
+    <a class="nav-item" href="#myprojects"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>My projects</a>
+    <a class="nav-item" href="#myplans"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>My work plans</a>
+    <a class="nav-item" href="#myreports"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>My reports</a>
+    <a class="nav-item" href="#tickets"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Tickets</a>
+    <div class="sidebar-foot">
+      <a class="nav-item" id="myKpiLink" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>My KPI</a>
+      <a class="nav-item" href="map.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>Map</a>
+      <button class="nav-item" onclick="reportIssue()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>Report an issue</button>
+      <button class="nav-item" onclick="logout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Log out</button>
+    </div>
+  </aside>
+
+  <div class="main-col">
+    <header class="topbar">
+      <button class="hamburger-btn" id="sidebarToggle" aria-label="Toggle menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+      <div class="topbar-title">
+        <h1>Site supervisor</h1>
+        <p class="muted">Daily work plans &amp; site reports for your assigned projects</p>
+      </div>
+      <div class="topbar-actions">
+        <div class="user-chip">
+          <div class="avatar" id="whoAvatar"></div>
+          <div class="meta"><div class="n" id="whoName"></div><div class="r">Site supervisor</div></div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="panel" id="overview">
+        <div class="panel-head"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>Overview</h2></div>
+        <section class="stat-grid">
+          <div class="stat-card"><div class="label">My projects</div><div class="value" id="statProjects">—</div></div>
+          <div class="stat-card"><div class="label">Work plans submitted</div><div class="value accent" id="statPlans">—</div></div>
+          <div class="stat-card"><div class="label">Reports submitted</div><div class="value accent" id="statReports">—</div></div>
+        </section>
+      </section>
+
+      <section class="panel" id="myprojects">
+        <div class="panel-head"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>My projects</h2></div>
+        <p class="muted" style="margin-top:-6px">The projects you supervise, read-only — progress is set by the project's own editors.</p>
+        <div class="table-scroll"><table>
+          <thead><tr><th>Project</th><th>Site</th><th>Status</th><th>Progress</th></tr></thead>
+          <tbody id="myProjectsBody"></tbody>
+        </table></div>
+      </section>
+
+      <!-- ============ DAILY WORK PLAN ============ -->
+      <!-- Not a tab: this section is hidden by default and shown as a popup
+           (uiHostDialog) by the "+ WORK PLAN" button in #myplans below — see
+           the script at the bottom of the page. -->
+      <section id="submitplan" hidden>
+        <div class="panel-head"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Daily Work Plan — Tomorrow's Plan</h2></div>
+        <form id="planForm">
+          <div class="inline">
+            <label class="grow">Project
+              <select id="p_project" required></select>
+            </label>
+            <label class="grow">Date<input id="p_date" type="date" required></label>
+            <label class="grow">Weather
+              <select id="p_weather">
+                <option value="">—</option>
+                <option value="clear">Clear</option>
+                <option value="cloudy">Cloudy</option>
+                <option value="rain">Rain</option>
+                <option value="storm">Storm</option>
+                <option value="extreme_heat">Extreme heat</option>
+              </select>
+            </label>
+          </div>
+
+          <h3>Planned activities (task / who will do it)</h3>
+          <div id="plan_tasks"><button type="button" class="secondary small repeater-add">+ Add planned activity</button></div>
+
+          <h3>Manpower &amp; safety summary</h3>
+          <div class="inline">
+            <label class="grow">Skilled workers<input id="p_skilled" type="number" min="0" step="1"></label>
+            <label class="grow">Labourers<input id="p_labourers" type="number" min="0" step="1"></label>
+            <label class="grow">Subcontractors<input id="p_subs" type="number" min="0" step="1"></label>
+            <label class="grow">Total workforce<input id="p_total" type="number" min="0" step="1" placeholder="Auto-summed"></label>
+          </div>
+          <div class="inline">
+            <label class="grow"><input id="p_toolbox" type="checkbox" style="width:auto;display:inline-block;margin:0 6px 0 0"> Toolbox talk completed</label>
+            <label class="grow"><input id="p_ppe" type="checkbox" style="width:auto;display:inline-block;margin:0 6px 0 0"> PPE check completed</label>
+          </div>
+
+          <label>Site notes / challenges / delays<textarea id="p_notes"></textarea></label>
+          <label>Target — what tomorrow needs to achieve<textarea id="p_target"></textarea></label>
+
+          <div style="margin-top:18px"><button type="submit">Submit work plan</button></div>
+          <p id="planError" class="error" hidden></p>
+          <p id="planSuccess" class="error" style="background:var(--good-bg);color:var(--good)" hidden></p>
+        </form>
+      </section>
+
+      <section class="panel" id="myplans">
+        <div class="panel-head"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>My work plans</h2><div class="head-actions"><button class="small" id="addWorkPlanBtn">+ WORK PLAN</button><button class="secondary small" id="refreshPlans">Refresh</button></div></div>
+        <div class="table-scroll"><table>
+          <thead><tr><th>Date</th><th>Project</th><th>Target</th><th>Workforce</th><th></th></tr></thead>
+          <tbody id="plansBody"></tbody>
+        </table></div>
+        <div id="planDetail"></div>
+      </section>
+
+      <!-- ============ SITE DAILY REPORT ============ -->
+      <!-- Not a tab: hidden by default, shown as a popup (uiHostDialog) by
+           the "+ REPORT" button in #myreports below. -->
+      <section id="submit" hidden>
+        <div class="panel-head"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>Site Daily Report</h2></div>
+        <form id="reportForm">
+          <div class="inline">
+            <label class="grow">Project
+              <select id="r_project" required></select>
+            </label>
+            <label class="grow">Date<input id="r_date" type="date" required></label>
+            <label class="grow">Report No.<input id="r_reportno" placeholder="e.g. 014"></label>
+            <label class="grow">Working hours<input id="r_hours" placeholder="e.g. 7:30am – 5:00pm"></label>
+            <label class="grow">Weather
+              <select id="r_weather">
+                <option value="">—</option>
+                <option value="clear">Clear</option>
+                <option value="cloudy">Cloudy</option>
+                <option value="rain">Rain</option>
+                <option value="storm">Storm</option>
+                <option value="extreme_heat">Extreme heat</option>
+              </select>
+            </label>
+          </div>
+
+          <h3>1 &amp; 2. Tasks today / work done today</h3>
+          <div id="rep_tasks"><button type="button" class="secondary small repeater-add">+ Add task</button></div>
+
+          <h3>Manpower on site</h3>
+          <div class="inline">
+            <label class="grow">Skilled workers<input id="r_skilled" type="number" min="0" step="1"></label>
+            <label class="grow">Labourers<input id="r_labourers" type="number" min="0" step="1"></label>
+            <label class="grow">Subcontractors<input id="r_subs" type="number" min="0" step="1"></label>
+            <label class="grow">Total workforce<input id="r_total" type="number" min="0" step="1" placeholder="Auto-summed"></label>
+          </div>
+
+          <h3>3. Materials (used / balance)</h3>
+          <div id="rep_materials"><button type="button" class="secondary small repeater-add">+ Add material</button></div>
+
+          <h3>4. Equipment on site</h3>
+          <div id="rep_equipment"><button type="button" class="secondary small repeater-add">+ Add equipment</button></div>
+
+          <h3>Photo evidence</h3>
+          <div id="rep_photos"><button type="button" class="secondary small repeater-add">+ Add photo</button></div>
+
+          <h3>Safety, quality &amp; site issues</h3>
+          <div class="inline">
+            <label class="grow"><input id="r_toolbox" type="checkbox" style="width:auto;display:inline-block;margin:0 6px 0 0"> Toolbox talk done</label>
+            <label class="grow">PPE compliance
+              <select id="r_ppe">
+                <option value="">—</option>
+                <option value="good">Good</option>
+                <option value="issue">Issue</option>
+              </select>
+            </label>
+            <label class="grow">Quality inspection
+              <select id="r_quality">
+                <option value="">—</option>
+                <option value="passed">Passed</option>
+                <option value="action_needed">Action needed</option>
+              </select>
+            </label>
+          </div>
+          <label>5. Problems / delays<textarea id="r_problems"></textarea></label>
+          <label>Action taken<textarea id="r_action"></textarea></label>
+
+          <h3>Other site issues (optional detail)</h3>
+          <div id="rep_safety"><button type="button" class="secondary small repeater-add">+ Add incident</button></div>
+
+          <h3>6. Tomorrow plan &amp; remarks</h3>
+          <label>Tomorrow plan (tasks + materials needed)<textarea id="r_next"></textarea></label>
+          <label>General remarks<textarea id="r_remarks"></textarea></label>
+
+          <h3>Reported by</h3>
+          <div class="inline">
+            <label class="grow">Name<input id="r_name"></label>
+            <label class="grow">Role<input id="r_role" placeholder="Site Supervisor"></label>
+          </div>
+
+          <div style="margin-top:18px"><button type="submit">Submit report</button></div>
+          <p id="reportError" class="error" hidden></p>
+          <p id="reportSuccess" class="error" style="background:var(--good-bg);color:var(--good)" hidden></p>
+        </form>
+      </section>
+
+      <section class="panel" id="myreports">
+        <div class="panel-head"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>My reports</h2><div class="head-actions"><button class="small" id="addReportBtn">+ REPORT</button><button class="secondary small" id="refreshReports">Refresh</button></div></div>
+        <div class="table-scroll"><table>
+          <thead><tr><th>Date</th><th>Project</th><th>Workforce</th><th>Problems</th><th></th></tr></thead>
+          <tbody id="reportsBody"></tbody>
+        </table></div>
+        <div id="reportDetail"></div>
+      </section>
+
+      <section class="panel" id="tickets">
+        <div class="panel-head"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Tickets</h2><div class="head-actions"><button class="small" id="addTicketBtn">+ TICKET ⚠</button><button class="secondary small" id="refreshMyTickets">Refresh</button></div></div>
+        <p class="muted" style="margin-top:-6px">Issues you've raised with IT, and whether they've been resolved.</p>
+        <div class="table-scroll"><table>
+          <thead><tr><th>Category</th><th>Description</th><th>Status</th><th>Raised</th><th>Resolution notes</th></tr></thead>
+          <tbody id="myTicketsBody"></tbody>
+        </table></div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="dialog.js"></script>
+<script>
+const session = requireRole('SITE_SUPERVISOR');
+if (typeof gaTrackRole === 'function') gaTrackRole(session.role);
+// Set before setupSidebarTabs() — see the comment on this line in
+// it-admin.html for why the order matters.
+document.getElementById('myKpiLink').href = 'kpi.html?userId=' + encodeURIComponent(session.userId);
+setupSidebarTabs('overview');
+setupMobileSidebar();
+document.getElementById('whoName').textContent = session.name;
+document.getElementById('whoAvatar').textContent = (session.name || '?').split(' ').map(function (s) { return s[0]; }).join('').slice(0, 2).toUpperCase();
+document.getElementById('r_date').value = new Date().toISOString().slice(0, 10);
+document.getElementById('r_name').value = session.name || '';
+document.getElementById('r_role').value = 'Site Supervisor';
+
+// tomorrow's date is the natural default for a work plan
+const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+document.getElementById('p_date').value = tomorrow.toISOString().slice(0, 10);
+
+let projectsById = {}, myProjects = [];
+const WEATHER_LABELS = { clear: 'Clear', cloudy: 'Cloudy', rain: 'Rain', storm: 'Storm', extreme_heat: 'Extreme heat' };
+
+// ---- generic repeating row group, used for every child table on the forms ----
+function makeRepeater(containerId, fields) {
+  const container = document.getElementById(containerId);
+  const addButton = container.querySelector('.repeater-add');
+
+  function addRow() {
+    const row = el('div', { class: 'repeater-row' });
+    const inputs = {};
+    fields.forEach(function (f) {
+      let input;
+      if (f.type === 'select') {
+        input = el('select', {});
+        (f.options || []).forEach(function (o) { input.appendChild(el('option', { value: o.value, text: o.label })); });
+      } else {
+        input = el('input', { type: f.type || 'text', placeholder: f.placeholder || '' });
+      }
+      inputs[f.key] = input;
+      row.appendChild(el('div', {}, [input]));
+    });
+    row.appendChild(el('button', { type: 'button', class: 'secondary small', text: '×', onclick: function () { row.remove(); } }));
+    row._inputs = inputs;
+    container.insertBefore(row, addButton);
+    return row;
+  }
+
+  addButton.addEventListener('click', function () { addRow(); });
+
+  return {
+    addRow: addRow,
+    getRows: function () {
+      return Array.from(container.querySelectorAll('.repeater-row')).map(function (row) {
+        const obj = {};
+        let hasValue = false;
+        fields.forEach(function (f) {
+          const v = row._inputs[f.key].value.toString().trim();
+          if (v) hasValue = true;
+          obj[f.key] = v;
+        });
+        return hasValue ? obj : null;
+      }).filter(Boolean);
+    },
+    reset: function () { container.querySelectorAll('.repeater-row').forEach(function (r) { r.remove(); }); }
+  };
+}
+
+// A dedicated repeater for photo evidence — unlike makeRepeater()'s plain
+// text/select rows, each row here is a real file picker (with a live
+// thumbnail) plus caption/location text fields. getRows() hands back the
+// chosen File objects themselves; uploading them to Drive happens in the
+// report form's submit handler, right before submitDailyReport().
+function makePhotoRepeater(containerId) {
+  const container = document.getElementById(containerId);
+  const addButton = container.querySelector('.repeater-add');
+
+  function addRow() {
+    const row = el('div', { class: 'repeater-row photo-row' });
+    const thumb = el('div', { class: 'photo-thumb' }, [el('span', { class: 'photo-thumb-empty', text: 'No photo' })]);
+    const fileInput = el('input', { type: 'file', accept: 'image/*', capture: 'environment' });
+    const captionInput = el('input', { type: 'text', placeholder: 'Caption' });
+    const locationInput = el('input', { type: 'text', placeholder: 'Location / activity shown' });
+
+    fileInput.addEventListener('change', function () {
+      const file = fileInput.files && fileInput.files[0];
+      thumb.innerHTML = '';
+      if (file) {
+        const img = document.createElement('img');
+        img.alt = '';
+        img.src = URL.createObjectURL(file);
+        img.onload = function () { URL.revokeObjectURL(img.src); };
+        thumb.appendChild(img);
+      } else {
+        thumb.appendChild(el('span', { class: 'photo-thumb-empty', text: 'No photo' }));
+      }
+    });
+
+    row.appendChild(el('div', { class: 'photo-pick' }, [thumb, fileInput]));
+    row.appendChild(el('div', {}, [captionInput]));
+    row.appendChild(el('div', {}, [locationInput]));
+    row.appendChild(el('button', { type: 'button', class: 'secondary small', text: '×', onclick: function () { row.remove(); } }));
+    row._fileInput = fileInput;
+    row._captionInput = captionInput;
+    row._locationInput = locationInput;
+    container.insertBefore(row, addButton);
+    return row;
+  }
+
+  addButton.addEventListener('click', function () { addRow(); });
+
+  return {
+    addRow: addRow,
+    getRows: function () {
+      return Array.from(container.querySelectorAll('.repeater-row')).map(function (row) {
+        const file = row._fileInput.files && row._fileInput.files[0] ? row._fileInput.files[0] : null;
+        const caption = row._captionInput.value.trim();
+        const location_activity = row._locationInput.value.trim();
+        if (!file && !caption && !location_activity) return null;
+        return { file: file, caption: caption, location_activity: location_activity };
+      }).filter(Boolean);
+    },
+    reset: function () { container.querySelectorAll('.repeater-row').forEach(function (r) { r.remove(); }); }
+  };
+}
+
+// Downscales an image file in the browser (canvas) before it's base64'd
+// and sent up — a straight-from-the-phone-camera photo can be 4000px/8MB+,
+// which would bloat the request and the Drive file for no real benefit at
+// report-printing size. Resolves to a 'data:image/jpeg;base64,...' string.
+// resizeImageToDataUrl() now lives in config.js, shared with reportIssue()'s
+// screenshot attachment.
+
+let planTasksRep, repTasksRep, materialsRep, equipmentRep, photosRep, safetyRep;
+
+async function init() {
+  const [assignments, projects, materials, equipment, sites] = await Promise.all([
+    apiCall('list', { table: 'PROJECT_ASSIGNMENTS' }),
+    apiCall('list', { table: 'PROJECTS' }),
+    apiCall('list', { table: 'MATERIALS' }),
+    apiCall('list', { table: 'EQUIPMENT' }),
+    apiCall('list', { table: 'SITES' })
+  ]);
+  projectsById = byId(projects);
+  const sitesById = byId(sites);
+
+  const myAssignments = assignments.filter(function (a) { return a.supervisor_id === session.userId; });
+  myProjects = myAssignments.map(function (a) { return projectsById[a.project_id]; }).filter(Boolean);
+  document.getElementById('statProjects').textContent = myProjects.length;
+
+  // Read-only — supervisors can see where their projects stand but editing
+  // a project's progress is a Manager/Admin Secretary/IT Admin action.
+  const myProjectsBody = document.getElementById('myProjectsBody');
+  myProjectsBody.innerHTML = '';
+  if (!myProjects.length) {
+    myProjectsBody.appendChild(el('tr', {}, [el('td', { colspan: '4', class: 'empty', text: 'No projects assigned yet.' })]));
+  } else {
+    myProjects.forEach(function (p) {
+      const site = sitesById[p.site_id];
+      myProjectsBody.appendChild(el('tr', {}, [
+        el('td', {}, [projectLink(p.id, p.name)]),
+        el('td', {}, [site ? siteLink(site.id, site.name) : document.createTextNode(p.site_id || '—')]),
+        el('td', { text: (p.status ? String(p.status).replace(/_/g, ' ') : '—') }),
+        el('td', {}, [progressBar(p.progress_percent)])
+      ]));
+    });
+  }
+
+  [document.getElementById('p_project'), document.getElementById('r_project')].forEach(function (select) {
+    select.innerHTML = '';
+    if (!myProjects.length) {
+      select.appendChild(el('option', { value: '', text: 'No project assigned yet' }));
+    } else {
+      myProjects.forEach(function (p) { select.appendChild(el('option', { value: p.id, text: p.name })); });
+    }
+  });
+
+  planTasksRep = makeRepeater('plan_tasks', [
+    { key: 'activity', placeholder: 'Planned activity / description' },
+    { key: 'work_area', placeholder: 'Work area' },
+    { key: 'responsible_team', placeholder: 'Responsible team' },
+    { key: 'manpower', placeholder: 'Manpower e.g. "2 masons"' },
+    { key: 'materials_equipment', placeholder: 'Materials / equipment needed' },
+    { key: 'daily_target', placeholder: 'Daily target' }
+  ]);
+  planTasksRep.addRow();
+
+  repTasksRep = makeRepeater('rep_tasks', [
+    { key: 'activity', placeholder: 'Task / work done' },
+    { key: 'work_area', placeholder: 'Work area' },
+    { key: 'planned_target', placeholder: 'Planned target' },
+    { key: 'actual_progress', placeholder: 'Actual progress' },
+    { key: 'status_remarks', placeholder: 'Status / remarks' }
+  ]);
+  repTasksRep.addRow();
+
+  materialsRep = makeRepeater('rep_materials', [
+    { key: 'material_id', type: 'select', options: materials.map(function (m) { return { value: m.id, label: m.name + ' (' + m.unit + ')' }; }) },
+    { key: 'opening_stock', placeholder: 'Opening stock', type: 'number' },
+    { key: 'received_qty', placeholder: 'Received today', type: 'number' },
+    { key: 'used_qty', placeholder: 'Used today', type: 'number' },
+    { key: 'balance_qty', placeholder: 'Balance', type: 'number' }
+  ]);
+  equipmentRep = makeRepeater('rep_equipment', [
+    { key: 'equipment_id', type: 'select', options: equipment.map(function (eq) { return { value: eq.id, label: eq.name }; }) },
+    { key: 'quantity', placeholder: 'Quantity', type: 'number' },
+    { key: 'notes', placeholder: 'Notes (e.g. "one cutting grinder machine")' }
+  ]);
+  photosRep = makePhotoRepeater('rep_photos');
+  safetyRep = makeRepeater('rep_safety', [
+    { key: 'description', placeholder: 'What happened' },
+    { key: 'severity', type: 'select', options: [{ value: 'low', label: 'Low' }, { value: 'medium', label: 'Medium' }, { value: 'high', label: 'High' }] },
+    { key: 'corrective_action', placeholder: 'Corrective action' }
+  ]);
+
+  loadPlans();
+  loadReports();
+}
+
+function autoTotal(skilledId, labourersId, subsId, totalId) {
+  [skilledId, labourersId, subsId].forEach(function (id) {
+    document.getElementById(id).addEventListener('input', function () {
+      const s = Number(document.getElementById(skilledId).value) || 0;
+      const l = Number(document.getElementById(labourersId).value) || 0;
+      const c = Number(document.getElementById(subsId).value) || 0;
+      document.getElementById(totalId).value = s + l + c;
+    });
+  });
+}
+autoTotal('p_skilled', 'p_labourers', 'p_subs', 'p_total');
+autoTotal('r_skilled', 'r_labourers', 'r_subs', 'r_total');
+
+// ---------- Popup forms: "+ WORK PLAN" / "+ REPORT" open the real form
+// sections (still #submitplan / #submit, with all their repeater logic
+// untouched) inside a modal via uiHostDialog() — no separate tabs anymore. ----------
+
+let planDialog = null, reportDialog = null;
+
+document.getElementById('addWorkPlanBtn').addEventListener('click', function () {
+  document.getElementById('planError').hidden = true;
+  document.getElementById('planSuccess').hidden = true;
+  planDialog = uiHostDialog(document.getElementById('submitplan'), {
+    title: 'New work plan',
+    onClose: function () { planDialog = null; }
+  });
+});
+
+document.getElementById('addReportBtn').addEventListener('click', function () {
+  document.getElementById('reportError').hidden = true;
+  document.getElementById('reportSuccess').hidden = true;
+  reportDialog = uiHostDialog(document.getElementById('submit'), {
+    title: 'New daily report',
+    onClose: function () { reportDialog = null; }
+  });
+});
+
+// ---------- Work plan submit ----------
+
+document.getElementById('planForm').addEventListener('submit', async function (e) {
+  e.preventDefault();
+  const errorEl = document.getElementById('planError');
+  const successEl = document.getElementById('planSuccess');
+  errorEl.hidden = true;
+  successEl.hidden = true;
+
+  const projectId = document.getElementById('p_project').value;
+  const project = projectsById[projectId];
+  if (!project) { showError(errorEl, new Error('Select a project first — ask your Admin secretary if none is listed.')); return; }
+
+  try {
+    await apiCall('submitWorkPlan', {
+      site_id: project.site_id,
+      project_id: projectId,
+      plan_date: document.getElementById('p_date').value,
+      weather: document.getElementById('p_weather').value,
+      skilled_workers: document.getElementById('p_skilled').value,
+      labourers: document.getElementById('p_labourers').value,
+      subcontractors: document.getElementById('p_subs').value,
+      total_workforce: document.getElementById('p_total').value,
+      toolbox_talk: document.getElementById('p_toolbox').checked,
+      ppe_check: document.getElementById('p_ppe').checked,
+      site_notes: document.getElementById('p_notes').value.trim(),
+      target: document.getElementById('p_target').value.trim(),
+      tasks: planTasksRep.getRows()
+    });
+
+    ['p_skilled', 'p_labourers', 'p_subs', 'p_total', 'p_notes', 'p_target'].forEach(function (id) { document.getElementById(id).value = ''; });
+    document.getElementById('p_weather').value = '';
+    document.getElementById('p_toolbox').checked = false;
+    document.getElementById('p_ppe').checked = false;
+    planTasksRep.reset();
+    planTasksRep.addRow();
+
+    successEl.textContent = 'Work plan submitted.';
+    successEl.hidden = false;
+    loadPlans();
+    // Let the supervisor see the success message for a moment, then close
+    // the popup back up — same form stays ready, blank, for next time.
+    if (planDialog) setTimeout(function () { if (planDialog) planDialog.close(); }, 1200);
+  } catch (err) {
+    showError(errorEl, err);
+  }
+});
+
+async function loadPlans() {
+  const plans = await apiCall('list', { table: 'WORK_PLANS' });
+  const mine = plans.filter(function (p) { return p.supervisor_id === session.userId; }).reverse();
+  document.getElementById('statPlans').textContent = mine.length;
+  const body = document.getElementById('plansBody');
+  body.innerHTML = '';
+  document.getElementById('planDetail').innerHTML = '';
+
+  if (!mine.length) { body.appendChild(el('tr', {}, [el('td', { colspan: '5', class: 'empty', text: 'No work plans submitted yet.' })])); return; }
+
+  mine.forEach(function (p) {
+    const project = projectsById[p.project_id];
+    body.appendChild(el('tr', {}, [
+      el('td', { text: fmtDate(p.plan_date) }),
+      el('td', {}, [project ? projectLink(project.id, project.name) : document.createTextNode(p.project_id || '—')]),
+      el('td', { text: p.target || '—' }),
+      el('td', { text: p.total_workforce || '—' }),
+      el('td', { class: 'row-actions' }, [
+        el('button', { class: 'small secondary', text: 'View', onclick: function () { viewPlanDetail(p.id); } }),
+        el('a', { class: 'small secondary btn-link', href: 'daily-plan.html?id=' + encodeURIComponent(p.id), text: 'Open' })
+      ])
+    ]));
+  });
+}
+
+async function viewPlanDetail(planId) {
+  const detail = await apiCall('getWorkPlanDetail', { planId: planId });
+  const container = document.getElementById('planDetail');
+  container.innerHTML = '';
+  container.appendChild(el('h2', { text: 'Work plan — ' + fmtDate(detail.plan.plan_date) }));
+  const meta = [];
+  if (detail.plan.total_workforce) meta.push('Workforce: ' + detail.plan.total_workforce);
+  if (detail.plan.weather) meta.push('Weather: ' + (WEATHER_LABELS[detail.plan.weather] || detail.plan.weather));
+  if (detail.plan.toolbox_talk) meta.push('Toolbox talk ✓');
+  if (detail.plan.ppe_check) meta.push('PPE check ✓');
+  if (meta.length) container.appendChild(el('p', { class: 'muted', text: meta.join(' · ') }));
+  if (detail.plan.target) container.appendChild(el('p', { text: 'Target: ' + detail.plan.target }));
+  if (detail.plan.site_notes) container.appendChild(el('p', { text: 'Site notes: ' + detail.plan.site_notes }));
+
+  container.appendChild(el('h3', { text: 'Planned activities (' + detail.tasks.length + ')' }));
+  if (!detail.tasks.length) {
+    container.appendChild(el('p', { class: 'empty', text: 'None recorded.' }));
+  } else {
+    detail.tasks.forEach(function (t) {
+      container.appendChild(el('p', { text: t.activity + (t.manpower ? ' — ' + t.manpower : '') + (t.work_area ? ' (' + t.work_area + ')' : '') }));
+    });
+  }
+}
+
+document.getElementById('refreshPlans').addEventListener('click', loadPlans);
+
+// ---------- Daily report submit ----------
+
+document.getElementById('reportForm').addEventListener('submit', async function (e) {
+  e.preventDefault();
+  const errorEl = document.getElementById('reportError');
+  const successEl = document.getElementById('reportSuccess');
+  errorEl.hidden = true;
+  successEl.hidden = true;
+
+  const projectId = document.getElementById('r_project').value;
+  const project = projectsById[projectId];
+  if (!project) { showError(errorEl, new Error('Select a project first — ask your Admin secretary if none is listed.')); return; }
+
+  const submitBtn = document.getElementById('reportForm').querySelector('button[type="submit"]');
+  const prevBtnText = submitBtn ? submitBtn.textContent : null;
+
+  try {
+    // Photos upload first (each one resized client-side, then sent to
+    // Drive via uploadDailyReportPhoto) so submitDailyReport() gets a real
+    // photo_path for each row instead of this being a separate step the
+    // supervisor has to remember to do afterwards.
+    const photoRows = photosRep.getRows();
+    const photos = [];
+    for (let i = 0; i < photoRows.length; i++) {
+      const row = photoRows[i];
+      let photo_path = '';
+      if (row.file) {
+        if (submitBtn) submitBtn.textContent = 'Uploading photo ' + (i + 1) + ' of ' + photoRows.length + '…';
+        const dataUrl = await resizeImageToDataUrl(row.file, 1600, 0.82);
+        const uploaded = await apiCall('uploadDailyReportPhoto', {
+          projectId: projectId,
+          filename: row.file.name || 'photo.jpg',
+          mimeType: 'image/jpeg',
+          dataBase64: dataUrl.split(',')[1]
+        });
+        photo_path = uploaded.photo_path;
+      }
+      photos.push({ photo_path: photo_path, caption: row.caption, location_activity: row.location_activity });
+    }
+    if (submitBtn) submitBtn.textContent = 'Submitting…';
+
+    await apiCall('submitDailyReport', {
+      site_id: project.site_id,
+      project_id: projectId,
+      report_date: document.getElementById('r_date').value,
+      report_no: document.getElementById('r_reportno').value.trim(),
+      working_hours: document.getElementById('r_hours').value.trim(),
+      weather: document.getElementById('r_weather').value,
+      skilled_workers: document.getElementById('r_skilled').value,
+      labourers: document.getElementById('r_labourers').value,
+      subcontractors: document.getElementById('r_subs').value,
+      total_workforce: document.getElementById('r_total').value,
+      toolbox_talk: document.getElementById('r_toolbox').checked,
+      ppe_compliance: document.getElementById('r_ppe').value,
+      quality_inspection: document.getElementById('r_quality').value,
+      problems_delays: document.getElementById('r_problems').value.trim(),
+      action_taken: document.getElementById('r_action').value.trim(),
+      tomorrow_plan: document.getElementById('r_next').value.trim(),
+      general_remarks: document.getElementById('r_remarks').value.trim(),
+      reported_by_name: document.getElementById('r_name').value.trim(),
+      reported_by_role: document.getElementById('r_role').value.trim(),
+      tasks: repTasksRep.getRows(),
+      materialUsage: materialsRep.getRows(),
+      equipmentUsage: equipmentRep.getRows(),
+      photos: photos,
+      safetyIncidents: safetyRep.getRows()
+    });
+
+    ['r_reportno', 'r_hours', 'r_skilled', 'r_labourers', 'r_subs', 'r_total', 'r_problems', 'r_action', 'r_next', 'r_remarks'].forEach(function (id) { document.getElementById(id).value = ''; });
+    document.getElementById('r_weather').value = '';
+    document.getElementById('r_ppe').value = '';
+    document.getElementById('r_quality').value = '';
+    document.getElementById('r_toolbox').checked = false;
+    [repTasksRep, materialsRep, equipmentRep, photosRep, safetyRep].forEach(function (r) { r.reset(); });
+    repTasksRep.addRow();
+
+    successEl.textContent = 'Report submitted.';
+    successEl.hidden = false;
+    loadReports();
+    if (reportDialog) setTimeout(function () { if (reportDialog) reportDialog.close(); }, 1200);
+  } catch (err) {
+    showError(errorEl, err);
+  } finally {
+    if (submitBtn && prevBtnText !== null) submitBtn.textContent = prevBtnText;
+  }
+});
+
+async function loadReports() {
+  const reports = await apiCall('list', { table: 'DAILY_REPORTS' });
+  const mine = reports.filter(function (r) { return r.supervisor_id === session.userId; }).reverse();
+  document.getElementById('statReports').textContent = mine.length;
+  const body = document.getElementById('reportsBody');
+  body.innerHTML = '';
+  document.getElementById('reportDetail').innerHTML = '';
+
+  if (!mine.length) { body.appendChild(el('tr', {}, [el('td', { colspan: '5', class: 'empty', text: 'No reports submitted yet.' })])); return; }
+
+  mine.forEach(function (r) {
+    const project = projectsById[r.project_id];
+    body.appendChild(el('tr', {}, [
+      el('td', { text: fmtDate(r.report_date) }),
+      el('td', {}, [project ? projectLink(project.id, project.name) : document.createTextNode(r.project_id || '—')]),
+      el('td', { text: r.total_workforce || '—' }),
+      el('td', { text: r.problems_delays || '—' }),
+      el('td', { class: 'row-actions' }, [
+        el('button', { class: 'small secondary', text: 'View', onclick: function () { viewDetail(r.id); } }),
+        el('a', { class: 'small secondary btn-link', href: 'report.html?id=' + encodeURIComponent(r.id), text: 'Open' })
+      ])
+    ]));
+  });
+}
+
+async function viewDetail(reportId) {
+  const detail = await apiCall('getDailyReportDetail', { reportId: reportId });
+  const container = document.getElementById('reportDetail');
+  container.innerHTML = '';
+
+  function section(title, rows, render) {
+    container.appendChild(el('h3', { text: title + ' (' + rows.length + ')' }));
+    if (!rows.length) { container.appendChild(el('p', { class: 'empty', text: 'None recorded.' })); return; }
+    rows.forEach(function (row) { container.appendChild(el('p', { text: render(row) })); });
+  }
+
+  container.appendChild(el('h2', { text: 'Report ' + (detail.report.report_no ? '#' + detail.report.report_no + ' — ' : '') + fmtDate(detail.report.report_date) }));
+  const meta = [];
+  if (detail.report.total_workforce) meta.push('Workforce: ' + detail.report.total_workforce);
+  if (detail.report.weather) meta.push('Weather: ' + (WEATHER_LABELS[detail.report.weather] || detail.report.weather));
+  if (detail.report.working_hours) meta.push('Hours: ' + detail.report.working_hours);
+  if (detail.report.toolbox_talk) meta.push('Toolbox talk ✓');
+  if (detail.report.ppe_compliance) meta.push('PPE: ' + detail.report.ppe_compliance);
+  if (detail.report.quality_inspection) meta.push('Quality: ' + detail.report.quality_inspection);
+  if (meta.length) container.appendChild(el('p', { class: 'muted', text: meta.join(' · ') }));
+
+  section('Tasks today / work done', detail.tasks, function (r) { return r.activity + (r.actual_progress ? ' — ' + r.actual_progress : '') + (r.status_remarks ? ' (' + r.status_remarks + ')' : ''); });
+  section('Materials', detail.materialUsage, function (r) { return 'used ' + r.used_qty + ', balance ' + r.balance_qty; });
+  section('Equipment', detail.equipmentUsage, function (r) { return (r.quantity ? r.quantity + ' — ' : '') + r.notes; });
+  container.appendChild(el('h3', { text: 'Photo evidence (' + detail.photos.length + ')' }));
+  if (!detail.photos.length) {
+    container.appendChild(el('p', { class: 'empty', text: 'None recorded.' }));
+  } else {
+    const photoGrid = el('div', { class: 'photo-evidence-grid' });
+    detail.photos.forEach(function (p) {
+      const kids = [];
+      if (p.photo_path) kids.push(el('a', { href: p.photo_path, target: '_blank', rel: 'noopener' }, [el('img', { src: p.photo_path, alt: p.caption || 'Site photo', loading: 'lazy' })]));
+      else kids.push(el('div', { class: 'photo-thumb-empty', text: 'No photo attached' }));
+      kids.push(el('div', { class: 'photo-evidence-caption', text: (p.caption || 'Photo') + (p.location_activity ? ' — ' + p.location_activity : '') }));
+      photoGrid.appendChild(el('div', { class: 'photo-evidence-item' }, kids));
+    });
+    container.appendChild(photoGrid);
+  }
+  section('Other site issues', detail.safetyIncidents, function (r) { return '[' + r.severity + '] ' + r.description; });
+
+  if (detail.report.problems_delays) container.appendChild(el('p', { text: 'Problems / delays: ' + detail.report.problems_delays }));
+  if (detail.report.action_taken) container.appendChild(el('p', { text: 'Action taken: ' + detail.report.action_taken }));
+  if (detail.report.tomorrow_plan) container.appendChild(el('p', { text: 'Tomorrow plan: ' + detail.report.tomorrow_plan }));
+  if (detail.report.general_remarks) container.appendChild(el('p', { text: 'Remarks: ' + detail.report.general_remarks }));
+  if (detail.report.reported_by_name) container.appendChild(el('p', { class: 'muted', text: 'Reported by: ' + detail.report.reported_by_name + (detail.report.reported_by_role ? ' — ' + detail.report.reported_by_role : '') }));
+}
+
+document.getElementById('refreshReports').addEventListener('click', loadReports);
+init();
+
+// ---- my tickets ----
+
+async function addTicket() {
+  const ok = await raiseTicketFlow();
+  if (ok) loadMyTickets();
+}
+document.getElementById('addTicketBtn').addEventListener('click', addTicket);
+
+async function loadMyTickets() {
+  const tickets = await apiCall('list', { table: 'TICKETS' });
+  renderMyTickets(document.getElementById('myTicketsBody'), tickets, session.userId);
+}
+document.getElementById('refreshMyTickets').addEventListener('click', loadMyTickets);
+loadMyTickets();
+</script>
+</body>
+</html>

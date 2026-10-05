@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Client — Dynamic Builders</title>
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="logo.png">
+<link rel="apple-touch-icon" href="logo.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#101a2e">
+<script src="ga.js"></script>
+<script src="pwa.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <a class="back-link" id="backLink" href="index.html">&larr; Back</a>
+  <div class="topbar-title">
+    <h1 id="clientName">Loading…</h1>
+    <p class="muted" id="clientSub"></p>
+  </div>
+  <div class="topbar-actions">
+    <button class="secondary small" id="editClientBtn" hidden>Edit</button>
+    <button class="secondary small" id="deleteClientBtn" hidden>Delete</button>
+    <div class="user-chip">
+      <div class="avatar" id="whoAvatar"></div>
+      <div class="meta"><div class="n" id="whoName"></div><div class="r" id="whoRole"></div></div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <p id="loadError" class="error" hidden></p>
+
+  <section class="panel" id="detailsPanel" hidden>
+    <div class="panel-head"><h2>Contact details</h2></div>
+    <div class="info-grid" id="clientInfoGrid"></div>
+    <h3 style="margin-top:18px">Notes</h3>
+    <p id="clientNotes" class="muted"></p>
+  </section>
+
+  <section class="panel" id="sitesPanel" hidden>
+    <div class="panel-head"><h2>Sites</h2></div>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Site</th><th>Location</th><th>Status</th></tr></thead>
+      <tbody id="sitesBody"></tbody>
+    </table></div>
+  </section>
+</main>
+
+<script src="config.js"></script>
+<script src="dialog.js"></script>
+<script>
+const session = requireSession();
+if (typeof gaTrackRole === 'function') gaTrackRole(session.role);
+document.getElementById('whoName').textContent = session.name;
+document.getElementById('whoRole').textContent = ROLE_LABELS[session.role] || session.role;
+document.getElementById('whoAvatar').textContent = (session.name || '?').split(' ').map(function (s) { return s[0]; }).join('').slice(0, 2).toUpperCase();
+document.getElementById('backLink').href = backLinkHref(session);
+
+const canManage = ['IT_ADMIN', 'MANAGER', 'ADMIN_SECRETARY'].indexOf(session.role) !== -1;
+const params = new URLSearchParams(window.location.search);
+const clientId = params.get('id');
+
+let clientCache = null;
+
+function cap(s) { return s ? String(s).charAt(0).toUpperCase() + String(s).slice(1) : ''; }
+
+async function init() {
+  if (!clientId) {
+    document.getElementById('loadError').textContent = 'No client specified.';
+    document.getElementById('loadError').hidden = false;
+    return;
+  }
+  try {
+    const [client, sites] = await Promise.all([
+      apiCall('getById', { table: 'CLIENTS', id: clientId }),
+      apiCall('list', { table: 'SITES' })
+    ]);
+    if (!client) throw new Error('No such client/consultant.');
+    clientCache = client;
+    render(sites.filter(function (s) { return s.client_id === clientId; }));
+  } catch (err) {
+    document.getElementById('loadError').textContent = err.message;
+    document.getElementById('loadError').hidden = false;
+  }
+}
+
+function render(sites) {
+  const c = clientCache;
+  document.title = 'Client — ' + c.name + ' — Dynamic Builders';
+  document.getElementById('clientName').textContent = c.name;
+  document.getElementById('clientSub').textContent = c.type === 'consultant' ? 'Consultant' : 'Client';
+
+  const grid = document.getElementById('clientInfoGrid');
+  grid.innerHTML = '';
+  function item(label, value) {
+    grid.appendChild(el('div', { class: 'info-item' }, [el('div', { class: 'label', text: label }), el('div', { class: 'val', text: value || '—' })]));
+  }
+  item('Type', cap(c.type));
+  item('Contact person', c.contact_name);
+  item('Phone', c.phone);
+  item('Email', c.email);
+  item('Address', c.address);
+  document.getElementById('clientNotes').textContent = c.notes || 'No notes recorded.';
+  document.getElementById('detailsPanel').hidden = false;
+
+  const editBtn = document.getElementById('editClientBtn');
+  editBtn.hidden = !canManage;
+  editBtn.onclick = function () { editClientHere(); };
+  const deleteBtn = document.getElementById('deleteClientBtn');
+  deleteBtn.hidden = session.role !== 'IT_ADMIN';
+  deleteBtn.onclick = function () { deleteClientHere(); };
+
+  const body = document.getElementById('sitesBody');
+  body.innerHTML = '';
+  if (!sites.length) {
+    body.appendChild(el('tr', {}, [el('td', { colspan: '3', class: 'empty', text: 'No sites linked to this client/consultant yet.' })]));
+  } else {
+    sites.forEach(function (s) {
+      body.appendChild(el('tr', {}, [
+        el('td', {}, [siteLink(s.id, s.name)]),
+        el('td', { text: s.location || '—' }),
+        el('td', {}, [el('span', { class: 'status ' + s.status, text: s.status })])
+      ]));
+    });
+  }
+  document.getElementById('sitesPanel').hidden = false;
+}
+
+async function editClientHere() {
+  const c = clientCache;
+  const values = await uiForm({
+    title: 'Edit client / consultant',
+    okText: 'Save changes',
+    fields: [
+      { key: 'name', label: 'Name', value: c.name },
+      { key: 'type', label: 'Type', type: 'select', value: c.type || 'client', options: [{ value: 'client', label: 'Client' }, { value: 'consultant', label: 'Consultant' }] },
+      { key: 'contact_name', label: 'Contact person', required: false, value: c.contact_name || '' },
+      { key: 'phone', label: 'Phone', required: false, value: c.phone || '' },
+      { key: 'email', label: 'Email', required: false, type: 'email', value: c.email || '' },
+      { key: 'address', label: 'Address', required: false, value: c.address || '' },
+      { key: 'notes', label: 'Notes', multiline: true, required: false, value: c.notes || '' }
+    ]
+  });
+  if (!values) return;
+  try {
+    await apiCall('updateClient', Object.assign({ clientId: c.id }, values));
+    init();
+  } catch (err) {
+    await uiAlert(err.message, { title: 'Could not save changes', danger: true });
+  }
+}
+
+async function deleteClientHere() {
+  const c = clientCache;
+  if (!await uiConfirm('Permanently delete "' + c.name + '"? This can\'t be undone. Sites that list this client/consultant are kept but will no longer link to a live record.', { title: 'Delete client/consultant?', danger: true, okText: 'Delete' })) return;
+  try {
+    await apiCall('deleteClient', { clientId: c.id });
+    window.location.href = backLinkHref(session);
+  } catch (err) {
+    await uiAlert(err.message, { title: 'Something went wrong', danger: true });
+  }
+}
+
+init();
+</script>
+</body>
+</html>

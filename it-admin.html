@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IT admin — Dynamic Builders</title>
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="logo.png">
+<link rel="apple-touch-icon" href="logo.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#101a2e">
+<script src="ga.js"></script>
+<script src="pwa.js"></script>
+</head>
+<body>
+<div class="app-shell">
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <img class="logo" src="logo.png" alt="Dynamic Builders logo">
+      <span class="name">Dynamic Builders<span class="role">IT admin</span></span>
+    </div>
+    <div class="sidebar-label">Sections</div>
+    <a class="nav-item" href="#overview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>Overview</a>
+    <a class="nav-item" href="#users"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Users</a>
+    <a class="nav-item" href="#projects"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Projects</a>
+    <a class="nav-item" href="#tickets"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Support tickets</a>
+    <a class="nav-item" href="#analytics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics</a>
+    <a class="nav-item" href="#auditlog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>Audit log</a>
+    <div class="sidebar-foot">
+      <a class="nav-item" id="myKpiLink" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>My KPI</a>
+      <a class="nav-item" href="map.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>Map</a>
+      <button class="nav-item" onclick="reportIssue()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>Report an issue</button>
+      <button class="nav-item" onclick="logout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Log out</button>
+    </div>
+  </aside>
+
+  <div class="main-col">
+    <header class="topbar">
+      <button class="hamburger-btn" id="sidebarToggle" aria-label="Toggle menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+      <div class="topbar-title">
+        <h1>IT admin</h1>
+        <p class="muted">Accounts &amp; the support queue</p>
+      </div>
+      <div class="topbar-actions">
+        <input class="search-input" id="userSearch" placeholder="Search users…">
+        <div class="user-chip">
+          <div class="avatar" id="whoAvatar"></div>
+          <div class="meta"><div class="n" id="whoName"></div><div class="r">IT admin</div></div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="panel" id="overview">
+        <div class="panel-head"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>Overview</h2></div>
+        <section class="stat-grid">
+          <div class="stat-card"><div class="label">Total users</div><div class="value" id="statUsers">—</div></div>
+          <div class="stat-card"><div class="label">Active users</div><div class="value accent" id="statActiveUsers">—</div></div>
+          <div class="stat-card"><div class="label">Pending applications</div><div class="value" id="statPendingUsers">—</div></div>
+          <div class="stat-card"><div class="label">Open tickets</div><div class="value" id="statOpenTickets">—</div></div>
+          <div class="stat-card"><div class="label">Resolved tickets</div><div class="value" id="statResolvedTickets">—</div></div>
+        </section>
+      </section>
+
+      <section class="panel" id="users">
+        <div class="panel-head"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Users</h2><div class="head-actions"><button class="small" id="addUserBtn">+ Add user 👤</button><button class="secondary small" id="refreshUsers">Refresh</button></div></div>
+        <div class="table-scroll"><table>
+          <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Phone</th><th></th></tr></thead>
+          <tbody id="usersBody"></tbody>
+        </table></div>
+      </section>
+
+      <section class="panel" id="projects">
+        <div class="panel-head"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Projects</h2><div class="head-actions"><button class="small" id="addProjectBtn">+ Record project</button><button class="secondary small" id="refreshProjects">Refresh</button></div></div>
+        <p class="muted" style="margin-top:-6px">Every project across every site. IT Admin can edit or delete any of these without the 3-edit cap Manager/Admin Secretary have.</p>
+        <div class="table-scroll"><table>
+          <thead><tr><th>Name</th><th>Site</th><th>Budget</th><th>Status</th><th>Progress</th><th></th></tr></thead>
+          <tbody id="projectsBody"></tbody>
+        </table></div>
+      </section>
+
+      <section class="panel" id="tickets">
+        <div class="panel-head"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Support tickets</h2><button class="secondary small" id="refreshTickets">Refresh</button></div>
+        <div class="table-scroll"><table>
+          <thead><tr><th>Raised by</th><th>Category</th><th>Description</th><th>Screenshot</th><th>Status</th><th></th></tr></thead>
+          <tbody id="ticketsBody"></tbody>
+        </table></div>
+      </section>
+
+      <section class="panel" id="analytics">
+        <div class="panel-head">
+          <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics</h2>
+          <div class="head-actions">
+            <select id="anRange">
+              <option value="4">Last 4 weeks</option>
+              <option value="8" selected>Last 8 weeks</option>
+              <option value="12">Last 12 weeks</option>
+              <option value="26">Last 26 weeks</option>
+            </select>
+            <button class="secondary small" id="anRefresh">Refresh</button>
+          </div>
+        </div>
+        <p class="muted" style="margin-top:-6px">Projects, work plans, daily reports, site supervisor KPIs, user accounts and support tickets over time.</p>
+        <div id="analyticsRoot"></div>
+      </section>
+
+      <section class="panel" id="auditlog">
+        <div class="panel-head"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>Audit log</h2><button class="secondary small" id="refreshAuditLog">Refresh</button></div>
+        <p class="muted" style="margin-top:-6px">Every login and significant action (account changes, project approvals, ticket handling) across the whole system, newest first.</p>
+        <div class="table-scroll"><table>
+          <thead><tr><th>When</th><th>Who</th><th>Role</th><th>Action</th><th>Details</th></tr></thead>
+          <tbody id="auditLogBody"></tbody>
+        </table></div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<div id="printArea"></div>
+
+<script src="config.js"></script>
+<script src="dialog.js"></script>
+<script src="charts.js"></script>
+<script src="analytics.js"></script>
+<script>
+const session = requireRole('IT_ADMIN');
+if (typeof gaTrackRole === 'function') gaTrackRole(session.role);
+// Set this before setupSidebarTabs() runs — it scans for nav-items whose
+// href starts with "#" and wires them into the tab system; the link starts
+// as href="#" in the markup (the userId isn't known until now), so setting
+// the real URL first keeps setupSidebarTabs() from ever seeing it as a tab.
+document.getElementById('myKpiLink').href = 'kpi.html?userId=' + encodeURIComponent(session.userId);
+setupSidebarTabs('overview');
+setupMobileSidebar();
+initAnalyticsTab(session.role);
+document.getElementById('whoName').textContent = session.name;
+document.getElementById('whoAvatar').textContent = (session.name || '?').split(' ').map(function (s) { return s[0]; }).join('').slice(0, 2).toUpperCase();
+
+let usersCache = [];
+let sitesById = {}, latestSites = [];
+
+// ROLE_OPTIONS is shared from config.js now (also used by register.html's
+// "role you're applying for" field and the Approve dialog below).
+
+// "Add a user" is a popup (uiForm) triggered by the + button on the Users
+// tab, rather than a tab of its own — one less place to click through, and
+// the same pattern editUser() already uses just below.
+async function addUser() {
+  const values = await uiForm({
+    title: 'Add a user',
+    okText: 'Add user',
+    fields: [
+      { key: 'name', label: 'Name' },
+      { key: 'email', label: 'Email', type: 'email' },
+      { key: 'role', label: 'Role', type: 'select', value: 'SITE_SUPERVISOR', options: ROLE_OPTIONS },
+      { key: 'phone', label: 'Phone', required: false },
+      { key: 'password', label: 'Temporary password', type: 'password' }
+    ]
+  });
+  if (!values) return;
+  try {
+    await apiCall('createUser', values);
+    loadUsers();
+    // The plaintext password only ever exists here, in the browser, at the
+    // moment it's typed — it can't be retrieved again afterwards, so this is
+    // the one chance to hand the new user a printable slip with it.
+    if (await uiConfirm('User added. Print a credentials slip for ' + values.name + ' now?', { title: 'Print credentials?', okText: 'Print' })) {
+      printUserCredentials(values);
+    }
+  } catch (err) {
+    await uiAlert(err.message, { title: 'Could not add user', danger: true });
+  }
+}
+document.getElementById('addUserBtn').addEventListener('click', addUser);
+
+// Editing happens in a popup dialog (uiForm, from dialog.js) rather than
+// reusing the "Add a user" form — it works the same no matter which tab
+// you're on, and it's clearer that you're changing one existing account
+// rather than filling out a new-user form.
+async function editUser(u) {
+  const values = await uiForm({
+    title: 'Edit user',
+    message: u.email,
+    okText: 'Save changes',
+    fields: [
+      { key: 'name', label: 'Name', value: u.name },
+      { key: 'email', label: 'Email', type: 'email', value: u.email },
+      { key: 'role', label: 'Role', type: 'select', value: u.role, options: ROLE_OPTIONS },
+      { key: 'phone', label: 'Phone', required: false, value: u.phone || '' },
+      { key: 'password', label: 'New password', type: 'password', required: false, optionalLabel: 'leave blank to keep current' }
+    ]
+  });
+  if (!values) return;
+  try {
+    const fields = { name: values.name, email: values.email, role: values.role, phone: values.phone };
+    if (values.password) fields.password = values.password;
+    await apiCall('updateUser', Object.assign({ userId: u.id }, fields));
+    loadUsers();
+    if (values.password && await uiConfirm('Password reset. Print a new credentials slip for ' + values.name + ' now?', { title: 'Print credentials?', okText: 'Print' })) {
+      printUserCredentials(values);
+    }
+  } catch (err) {
+    await uiAlert(err.message, { title: 'Could not save changes', danger: true });
+  }
+}
+
+// ---------- printable documents ----------
+//
+// Builds a simple letterhead-style document into #printArea (hidden on
+// screen, shown only by the @media print rule in style.css) and calls
+// window.print(). Two kinds: a one-off credentials slip right after a
+// user is created or their password is reset (the only moment a plaintext
+// password is ever available — it can't be retrieved afterwards), and a
+// general user-details sheet for any existing account (no password, since
+// there isn't one to show after the fact).
+
+function printHead(kind) {
+  return el('div', { class: 'print-head' }, [
+    el('h1', { text: 'Dynamic Builders' }),
+    el('p', { text: kind })
+  ]);
+}
+
+function printFieldTable(pairs) {
+  const rows = [];
+  for (let i = 0; i < pairs.length; i += 2) {
+    const a = pairs[i], b = pairs[i + 1];
+    const cells = [el('td', { class: 'pf-label', text: a[0] }), el('td', { text: a[1] || '—' })];
+    if (b) cells.push(el('td', { class: 'pf-label', text: b[0] }), el('td', { text: b[1] || '—' }));
+    else cells.push(el('td', { class: 'pf-label' }), el('td', {}));
+    rows.push(el('tr', {}, cells));
+  }
+  return el('table', { class: 'print-field-table' }, [el('tbody', {}, rows)]);
+}
+
+function doPrint(docEl) {
+  const area = document.getElementById('printArea');
+  area.innerHTML = '';
+  area.appendChild(el('div', { class: 'print-doc' }, [docEl]));
+  document.body.classList.add('printing');
+  window.print();
+}
+window.addEventListener('afterprint', function () { document.body.classList.remove('printing'); });
+
+function printUserCredentials(u) {
+  const doc = el('div', {}, [
+    printHead('New account credentials'),
+    printFieldTable([
+      ['Name', u.name], ['Role', ROLE_LABELS[u.role] || u.role],
+      ['Email (username)', u.email], ['Phone', u.phone || '—'],
+      ['Temporary password', u.password]
+    ]),
+    el('p', { class: 'muted', text: 'Please change this password after your first login. Keep this slip private — destroy it once the password has been changed.' }),
+    el('p', { class: 'muted', text: 'Issued: ' + new Date().toLocaleString() })
+  ]);
+  doPrint(doc);
+}
+
+function printUserDetails(u) {
+  const doc = el('div', {}, [
+    printHead('User account details'),
+    printFieldTable([
+      ['Name', u.name], ['Role', ROLE_LABELS[u.role] || u.role],
+      ['Email', u.email], ['Phone', u.phone || '—'],
+      ['Status', u.status], ['User ID', u.id]
+    ]),
+    el('p', { class: 'muted', text: 'Printed: ' + new Date().toLocaleString() + ' by ' + session.name })
+  ]);
+  doPrint(doc);
+}
+
+async function setUserStatus(u, status) {
+  const verb = status === 'suspended' ? 'suspend' : 're-activate';
+  if (!await uiConfirm('Really ' + verb + ' ' + u.name + '?', { title: verb === 'suspend' ? 'Suspend user?' : 'Re-activate user?', danger: verb === 'suspend', okText: verb === 'suspend' ? 'Suspend' : 'Activate' })) return;
+  try {
+    await apiCall('updateUser', { userId: u.id, status: status });
+    loadUsers();
+  } catch (err) {
+    await uiAlert(err.message, { title: 'Something went wrong', danger: true });
+  }
+}
+
+async function deleteUser(u) {
+  const isPending = u.status === 'pending_verification' || u.status === 'pending_approval';
+  const verb = isPending ? 'reject' : 'permanently delete';
+  const msg = (isPending ? 'Reject ' : 'Permanently delete ') + u.name + ' (' + u.email + ')? This can\'t be undone.';
+  if (!await uiConfirm(msg, { title: isPending ? 'Reject application?' : 'Delete user?', danger: true, okText: isPending ? 'Reject' : 'Delete' })) return;
+  try {
+    await apiCall('deleteUser', { userId: u.id });
+    loadUsers();
+  } catch (err) {
+    await uiAlert(err.message, { title: 'Something went wrong', danger: true });
+  }
+}
+
+// Approving is the other half of self-service registration (see
+// registerAccount()/verifyEmail() in Auth.gs): picks the role — defaulting
+// to whatever they applied as, if anything — and activates the account.
+// IT Admin can override the requested role right here before approving.
+async function approveUserFlow(u) {
+  const values = await uiForm({
+    title: 'Approve ' + u.name,
+    message: u.email + (u.requested_role ? ' — applied as ' + (ROLE_LABELS[u.requested_role] || u.requested_role) : ' — no role requested'),
+    okText: 'Approve',
+    fields: [
+      { key: 'role', label: 'Role', type: 'select', value: u.requested_role || 'SITE_SUPERVISOR', options: ROLE_OPTIONS }
+    ]
+  });
+  if (!values) return;
+  try {
+    await apiCall('approveUser', { userId: u.id, role: values.role });
+    loadUsers();
+    await uiAlert(u.name + ' is approved as ' + (ROLE_LABELS[values.role] || values.role) + ' and has been emailed.', { title: 'Approved' });
+  } catch (err) {
+    await uiAlert(err.message, { title: 'Could not approve', danger: true });
+  }
+}
+
+async function loadUsers() {
+  const users = await apiCall('list', { table: 'USERS' });
+  usersCache = users;
+  document.getElementById('statUsers').textContent = users.length;
+  document.getElementById('statActiveUsers').textContent = users.filter(function (u) { return u.status === 'active'; }).length;
+  document.getElementById('statPendingUsers').textContent = users.filter(function (u) { return u.status === 'pending_verification' || u.status === 'pending_approval'; }).length;
+  const body = document.getElementById('usersBody');
+  body.innerHTML = '';
+  if (!users.length) { body.appendChild(el('tr', {}, [el('td', { colspan: '6', class: 'empty', text: 'No users yet.' })])); return; }
+  // Self-registered applicants (see "Self-service account registration" in
+  // the README) show up here same as everyone else, just with a different
+  // status and action set — pending_verification means they haven't clicked
+  // the emailed link yet (nothing for IT Admin to do but wait, or reject);
+  // pending_approval means they're verified and waiting on an Approve.
+  users.forEach(function (u) {
+    const isSelf = u.id === session.userId;
+    const isPendingVerification = u.status === 'pending_verification';
+    const isPendingApproval = u.status === 'pending_approval';
+    const actions = el('div', { class: 'row-actions' });
+    if (isPendingApproval) {
+      actions.appendChild(el('button', { class: 'small', text: 'Approve', onclick: function () { approveUserFlow(u); } }));
+    } else {
+      actions.appendChild(el('button', { class: 'small secondary', text: 'Edit', onclick: function () { editUser(u); } }));
+    }
+    actions.appendChild(el('button', { class: 'small secondary', text: 'Print', onclick: function () { printUserDetails(u); } }));
+    if (!isSelf) {
+      if (!isPendingVerification && !isPendingApproval) {
+        actions.appendChild(u.status === 'active'
+          ? el('button', { class: 'small secondary', text: 'Suspend', onclick: function () { setUserStatus(u, 'suspended'); } })
+          : el('button', { class: 'small secondary', text: 'Activate', onclick: function () { setUserStatus(u, 'active'); } }));
+      }
+      actions.appendChild(el('button', { class: 'small danger', text: (isPendingVerification || isPendingApproval) ? 'Reject' : 'Delete', onclick: function () { deleteUser(u); } }));
+    }
+    const roleCell = u.role
+      ? document.createTextNode(ROLE_LABELS[u.role] || u.role)
+      : el('span', { class: 'muted', text: u.requested_role ? 'Applying: ' + (ROLE_LABELS[u.requested_role] || u.requested_role) : 'Not yet assigned' });
+    body.appendChild(el('tr', { 'data-search': (u.name + ' ' + u.email).toLowerCase() }, [
+      el('td', {}, [userLink(u.id, u.name)]),
+      el('td', { text: u.email }),
+      el('td', {}, [roleCell]),
+      el('td', {}, [el('span', { class: 'status ' + u.status, text: u.status.replace(/_/g, ' ') })]),
+      el('td', { text: u.phone || '—' }),
+      el('td', {}, [actions])
+    ]));
+  });
+}
+
+// ---- projects (IT Admin: unrestricted — no 3-edit cap, and a Delete
+// button Manager/Admin Secretary don't get; see updateProject()/
+// deleteProject() in Auth.gs) ----
+
+async function loadSites() {
+  const sites = await apiCall('list', { table: 'SITES' });
+  latestSites = sites;
+  sitesById = byId(sites);
+}
+
+async function addProject() {
+  const siteOptions = latestSites.map(function (s) { return { value: s.id, label: s.name + ' — ' + s.location }; });
+  const values = await uiForm({
+    title: 'Record a project',
+    okText: 'Record project',
+    fields: [
+      { key: 'name', label: 'Project name' },
+      { key: 'site_id', label: 'Site', type: 'select', options: siteOptions },
+      { key: 'budget', label: 'Budget', type: 'number', required: false },
+      { key: 'planned_start', label: 'Planned start', type: 'date', required: false },
+      { key: 'planned_end', label: 'Planned end', type: 'date', required: false },
+      { key: 'description', label: 'Description', multiline: true, required: false }
+    ]
+  });
+  if (!values) return;
+  try {
+    await apiCall('createProject', values);
+    loadProjects();
+  } catch (err) {
+    await uiAlert(err.message, { title: 'Could not record project', danger: true });
+  }
+}
+document.getElementById('addProjectBtn').addEventListener('click', addProject);
+
+async function editProject(p) {
+  const siteOptions = latestSites.map(function (s) { return { value: s.id, label: s.name + ' — ' + s.location }; });
+  const values = await uiForm({
+    title: 'Edit project',
+    message: 'IT Admin edits are unrestricted.',
+    okText: 'Save changes',
+    fields: [
+      { key: 'name', label: 'Project name', value: p.name },
+      { key: 'site_id', label: 'Site', type: 'select', value: p.site_id, options: siteOptions },
+      { key: 'budget', label: 'Budget', type: 'number', required: false, value: p.budget || '' },
+      { key: 'planned_start', label: 'Planned start', type: 'date', required: false, value: p.planned_start || '' },
+      { key: 'planned_end', label: 'Planned end', type: 'date', required: false, value: p.planned_end || '' },
+      { key: 'description', label: 'Description', multiline: true, required: false, value: p.description || '' }
+    ]
+  });
+  if (!values) return;
+  try {
+    await apiCall('updateProject', Object.assign({ projectId: p.id }, values));
+    loadProjects();
+  } catch (err) {
+    await uiAlert(err.message, { title: 'Could not save changes', danger: true });
+  }
+}
+
+async function deleteProjectHere(p) {
+  if (!await uiConfirm('Permanently delete "' + p.name + '"? This can\'t be undone. Its work plans, daily reports and assignments are kept but will no longer link to a live project.', { title: 'Delete project?', danger: true, okText: 'Delete' })) return;
+  try {
+    await apiCall('deleteProject', { projectId: p.id });
+    loadProjects();
+  } catch (err) {
+    await uiAlert(err.message, { title: 'Something went wrong', danger: true });
+  }
+}
+
+async function loadProjects() {
+  const projects = await apiCall('list', { table: 'PROJECTS' });
+  const body = document.getElementById('projectsBody');
+  body.innerHTML = '';
+  if (!projects.length) { body.appendChild(el('tr', {}, [el('td', { colspan: '6', class: 'empty', text: 'No projects recorded yet.' })])); return; }
+
+  projects.slice().reverse().forEach(function (p) {
+    const site = sitesById[p.site_id];
+    const actionCell = el('td', { class: 'row-actions' });
+    if (p.status === 'pending_approval') {
+      actionCell.appendChild(el('button', {
+        class: 'small', text: 'Approve', onclick: async function () {
+          try { await apiCall('approveProject', { projectId: p.id }); loadProjects(); }
+          catch (err) { await uiAlert(err.message, { title: 'Something went wrong', danger: true }); }
+        }
+      }));
+    }
+    actionCell.appendChild(el('button', { class: 'small secondary', text: 'Edit', onclick: function () { editProject(p); } }));
+    actionCell.appendChild(el('button', { class: 'small danger', text: 'Delete', onclick: function () { deleteProjectHere(p); } }));
+    body.appendChild(el('tr', {}, [
+      el('td', {}, [projectLink(p.id, p.name)]),
+      el('td', {}, [site ? siteLink(site.id, site.name) : document.createTextNode(p.site_id || '—')]),
+      el('td', { text: p.budget || '—' }),
+      el('td', {}, [el('span', { class: 'status ' + p.status, text: p.status.replace('_', ' ') })]),
+      el('td', {}, [progressBar(p.progress_percent, function (next) {
+        apiCall('updateProjectProgress', { projectId: p.id, progressPercent: next }).then(loadProjects)
+          .catch(function (err) { uiAlert(err.message, { title: 'Something went wrong', danger: true }); });
+      })]),
+      actionCell
+    ]));
+  });
+}
+document.getElementById('refreshProjects').addEventListener('click', loadProjects);
+
+async function loadTickets() {
+  const tickets = await apiCall('list', { table: 'TICKETS' });
+  const users = byId(await apiCall('list', { table: 'USERS' }));
+  document.getElementById('statOpenTickets').textContent = tickets.filter(function (t) { return t.status === 'open'; }).length;
+  document.getElementById('statResolvedTickets').textContent = tickets.filter(function (t) { return t.status === 'resolved'; }).length;
+  const body = document.getElementById('ticketsBody');
+  body.innerHTML = '';
+  if (!tickets.length) { body.appendChild(el('tr', {}, [el('td', { colspan: '6', class: 'empty', text: 'No tickets.' })])); return; }
+
+  tickets.slice().reverse().forEach(function (t) {
+    const raiser = users[t.raised_by];
+    // Full requester details — not just a name — so IT can see who they're
+    // actually dealing with (id/role/email) without a separate lookup.
+    const raisedByCell = el('td', {});
+    if (raiser) {
+      raisedByCell.appendChild(userLink(raiser.id, raiser.name));
+      raisedByCell.appendChild(el('div', { class: 'ticket-requester-meta', text: (ROLE_LABELS[raiser.role] || raiser.role) + ' · ' + raiser.email }));
+      raisedByCell.appendChild(el('div', { class: 'ticket-requester-meta', text: 'ID: ' + raiser.id }));
+    } else {
+      raisedByCell.appendChild(document.createTextNode(t.raised_by || '—'));
+    }
+
+    const screenshotCell = el('td', {});
+    if (t.screenshot_path) {
+      screenshotCell.appendChild(el('a', { href: t.screenshot_path, target: '_blank', rel: 'noopener' }, [
+        el('img', { src: t.screenshot_path, alt: 'Ticket screenshot', class: 'ticket-screenshot-thumb', loading: 'lazy' })
+      ]));
+    } else {
+      screenshotCell.appendChild(el('span', { class: 'muted', text: 'None' }));
+    }
+
+    const actionCell = el('td', {});
+    if (t.status === 'open') {
+      actionCell.appendChild(el('button', {
+        class: 'small', text: 'Resolve', onclick: async function () {
+          const notes = await uiPrompt({ title: 'Resolve ticket', message: 'Add a note about how this was resolved.', label: 'Resolution notes (optional)', multiline: true, required: false, okText: 'Mark resolved' });
+          if (notes === null) return;
+          try { await apiCall('resolveTicket', { ticketId: t.id, resolutionNotes: notes }); loadTickets(); }
+          catch (err) { await uiAlert(err.message, { title: 'Something went wrong', danger: true }); }
+        }
+      }));
+    }
+    actionCell.appendChild(el('button', {
+      class: 'small danger', text: 'Delete', onclick: async function () {
+        if (!await uiConfirm('Permanently delete this ticket? This can\'t be undone.', { title: 'Delete ticket?', danger: true, okText: 'Delete' })) return;
+        try { await apiCall('deleteTicket', { ticketId: t.id }); loadTickets(); }
+        catch (err) { await uiAlert(err.message, { title: 'Something went wrong', danger: true }); }
+      }
+    }));
+    body.appendChild(el('tr', {}, [
+      raisedByCell,
+      el('td', { text: t.category }),
+      el('td', { text: t.description }),
+      screenshotCell,
+      el('td', {}, [el('span', { class: 'status ' + t.status, text: t.status })]),
+      actionCell
+    ]));
+  });
+}
+
+async function loadAuditLog() {
+  const entries = await apiCall('getAuditLog', {});
+  const body = document.getElementById('auditLogBody');
+  body.innerHTML = '';
+  if (!entries.length) { body.appendChild(el('tr', {}, [el('td', { colspan: '5', class: 'empty', text: 'Nothing logged yet.' })])); return; }
+  entries.forEach(function (a) {
+    body.appendChild(el('tr', {}, [
+      el('td', { text: a.created_at ? new Date(a.created_at).toLocaleString() : '—' }),
+      el('td', { text: a.user_name || '—' }),
+      el('td', { text: ROLE_LABELS[a.role] || a.role || '—' }),
+      el('td', { text: a.action || '—' }),
+      el('td', { text: a.details || '—' })
+    ]));
+  });
+}
+
+document.getElementById('refreshUsers').addEventListener('click', loadUsers);
+document.getElementById('refreshTickets').addEventListener('click', loadTickets);
+document.getElementById('refreshAuditLog').addEventListener('click', loadAuditLog);
+document.getElementById('userSearch').addEventListener('input', function (e) {
+  const q = e.target.value.trim().toLowerCase();
+  document.querySelectorAll('#usersBody tr[data-search]').forEach(function (row) {
+    row.style.display = row.getAttribute('data-search').indexOf(q) === -1 ? 'none' : '';
+  });
+});
+loadUsers();
+loadSites().then(loadProjects);
+loadTickets();
+loadAuditLog();
+</script>
+</body>
+</html>

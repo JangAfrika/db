@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monthly Review — Dynamic Builders</title>
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="logo.png">
+<link rel="apple-touch-icon" href="logo.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#101a2e">
+<script src="ga.js"></script>
+<script src="pwa.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <a class="back-link" id="backLink" href="index.html">&larr; Back</a>
+  <div class="topbar-title">
+    <h1 id="reviewTitle">Loading monthly review…</h1>
+    <p class="muted" id="reviewSub"></p>
+  </div>
+  <div class="topbar-actions">
+    <button class="secondary small" id="printBtn" hidden>Print</button>
+    <div class="user-chip">
+      <div class="avatar" id="whoAvatar"></div>
+      <div class="meta"><div class="n" id="whoName"></div><div class="r" id="whoRole"></div></div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <p id="loadError" class="error" hidden></p>
+
+  <section class="panel" id="detailsPanel" hidden>
+    <div class="panel-head"><h2>Review details</h2></div>
+    <div class="info-grid" id="reviewInfoGrid"></div>
+    <h3 style="margin-top:18px">Summary</h3>
+    <p id="reviewSummary" class="muted"></p>
+  </section>
+
+  <section class="panel" id="evaluationsPanel" hidden>
+    <div class="panel-head"><h2>Supervisor evaluations this month</h2></div>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Supervisor</th><th>Score</th><th>Notes</th><th></th></tr></thead>
+      <tbody id="evaluationsBody"></tbody>
+    </table></div>
+  </section>
+</main>
+
+<div id="printArea"></div>
+
+<script src="config.js"></script>
+<script src="dialog.js"></script>
+<script>
+const session = requireSession();
+if (typeof gaTrackRole === 'function') gaTrackRole(session.role);
+document.getElementById('whoName').textContent = session.name;
+document.getElementById('whoRole').textContent = ROLE_LABELS[session.role] || session.role;
+document.getElementById('whoAvatar').textContent = (session.name || '?').split(' ').map(function (s) { return s[0]; }).join('').slice(0, 2).toUpperCase();
+document.getElementById('backLink').href = backLinkHref(session);
+
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const params = new URLSearchParams(window.location.search);
+const reviewId = params.get('id');
+
+let bundleCache = null;
+
+async function init() {
+  if (!reviewId) {
+    document.getElementById('loadError').textContent = 'No monthly review specified.';
+    document.getElementById('loadError').hidden = false;
+    return;
+  }
+  try {
+    const bundle = await apiCall('getMonthlyReviewDetail', { reviewId: reviewId });
+    bundleCache = bundle;
+    render();
+    document.getElementById('printBtn').hidden = false;
+  } catch (err) {
+    document.getElementById('loadError').textContent = err.message;
+    document.getElementById('loadError').hidden = false;
+  }
+}
+
+function monthLabel(r) { return (MONTH_NAMES[r.month - 1] || r.month) + ' ' + r.year; }
+
+function render() {
+  const r = bundleCache.review;
+  const site = bundleCache.site;
+  const siteName = site ? site.name : (r.site_id || '—');
+  document.title = 'Monthly Review — ' + siteName + ' — Dynamic Builders';
+  document.getElementById('reviewTitle').textContent = 'Monthly Review — ' + monthLabel(r);
+  document.getElementById('reviewSub').textContent = siteName;
+
+  const grid = document.getElementById('reviewInfoGrid');
+  grid.innerHTML = '';
+  function item(label, value, link) {
+    grid.appendChild(el('div', { class: 'info-item' }, [el('div', { class: 'label', text: label }), el('div', { class: 'val' }, [link || document.createTextNode(value || '—')])]));
+  }
+  item('Site', siteName, site ? siteLink(site.id, siteName) : null);
+  item('Month', MONTH_NAMES[r.month - 1] || r.month);
+  item('Year', r.year);
+
+  document.getElementById('reviewSummary').textContent = r.summary || 'No summary recorded.';
+  document.getElementById('detailsPanel').hidden = false;
+
+  const body = document.getElementById('evaluationsBody');
+  body.innerHTML = '';
+  const evaluations = bundleCache.evaluations || [];
+  if (!evaluations.length) {
+    body.appendChild(el('tr', {}, [el('td', { colspan: '4', class: 'empty', text: 'No supervisor evaluations recorded for this review yet.' })]));
+  } else {
+    evaluations.forEach(function (ev) {
+      body.appendChild(el('tr', {}, [
+        el('td', {}, [userLink(ev.user_id, ev.supervisorName)]),
+        el('td', { text: ev.score }),
+        el('td', { text: ev.notes || '—' }),
+        el('td', {}, [kpiLink(ev.user_id, 'View KPI')])
+      ]));
+    });
+  }
+  document.getElementById('evaluationsPanel').hidden = false;
+}
+
+function doPrint(docEl) {
+  const area = document.getElementById('printArea');
+  area.innerHTML = '';
+  area.appendChild(el('div', { class: 'print-doc' }, [docEl]));
+  document.body.classList.add('printing');
+  window.print();
+}
+window.addEventListener('afterprint', function () { document.body.classList.remove('printing'); });
+
+document.getElementById('printBtn').addEventListener('click', function () {
+  if (!bundleCache) return;
+  const r = bundleCache.review;
+  const site = bundleCache.site;
+  const siteName = site ? site.name : (r.site_id || '—');
+  const evalRows = (bundleCache.evaluations || []).map(function (ev) {
+    return el('tr', {}, [el('td', { text: ev.supervisorName }), el('td', { text: ev.score }), el('td', { text: ev.notes || '—' })]);
+  });
+  const doc = el('div', {}, [
+    el('div', { class: 'print-head' }, [el('h1', { text: 'Dynamic Builders' }), el('p', { text: 'Monthly Review' })]),
+    el('table', { class: 'print-field-table' }, [el('tbody', {}, [
+      el('tr', {}, [el('td', { class: 'pf-label', text: 'Site' }), el('td', { text: siteName }), el('td', { class: 'pf-label', text: 'Month' }), el('td', { text: monthLabel(r) })])
+    ])]),
+    el('h2', { text: 'Summary' }),
+    el('p', { text: r.summary || 'No summary recorded.' }),
+    el('h2', { text: 'Supervisor evaluations' }),
+    evalRows.length
+      ? el('table', { class: 'print-field-table' }, [
+          el('tbody', {}, [el('tr', {}, [el('td', { class: 'pf-label', text: 'Supervisor' }), el('td', { class: 'pf-label', text: 'Score' }), el('td', { class: 'pf-label', text: 'Notes' })])].concat(evalRows))
+        ])
+      : el('p', { text: 'No evaluations recorded.' })
+  ]);
+  doPrint(doc);
+});
+
+init();
+</script>
+</body>
+</html>

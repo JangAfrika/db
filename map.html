@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Site map — Dynamic Builders</title>
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="logo.png">
+<link rel="apple-touch-icon" href="logo.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#101a2e">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="ga.js"></script>
+<script src="pwa.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <a class="back-link" id="backLink" href="index.html">&larr; Back</a>
+  <div class="topbar-title">
+    <h1>Site map</h1>
+    <p class="muted" id="mapSub">Every site with GPS coordinates recorded</p>
+  </div>
+  <div class="topbar-actions">
+    <div class="user-chip">
+      <div class="avatar" id="whoAvatar"></div>
+      <div class="meta"><div class="n" id="whoName"></div><div class="r" id="whoRole"></div></div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <p id="loadError" class="error" hidden></p>
+  <p id="geocodeNotice" class="muted" hidden></p>
+  <p id="emptyState" class="muted" hidden>No sites have GPS coordinates recorded yet — add one from a site's "Edit" form (a "lat, lng" pair or a Plus Code like "ABCD+123, City" both work).</p>
+
+  <!-- Only shown when the page is opened for one specific site (?site=...),
+       e.g. from a site's clickable GPS value — an embedded real Google Map
+       (satellite by default, same as the main map below) for that one
+       location, since Google's own map is the most familiar, most
+       "just works on my phone" way to show a single place and get driving
+       directions to it. See "Site map & clickable GPS coordinates" in the
+       README for how this embed works without an API key. -->
+  <section class="panel" id="googleEmbedPanel" hidden>
+    <div class="panel-head">
+      <h2 id="googleEmbedTitle">This site on Google Maps</h2>
+      <div class="head-actions">
+        <a class="btn-link" id="googleOpenLink" target="_blank" rel="noopener">Open in Google Maps ↗</a>
+        <a class="btn-link" id="googleDirectionsLink" target="_blank" rel="noopener">Get directions ↗</a>
+      </div>
+    </div>
+    <iframe id="googleEmbedFrame" style="width:100%; height:360px; border:0; border-radius:var(--radius-sm)" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+  </section>
+
+  <h3 id="overviewHeading" style="margin-top:22px">All sites</h3>
+  <div class="map-search">
+    <input id="siteSearch" class="dlg-input" type="text" placeholder="Search sites by name or location…" autocomplete="off" disabled>
+    <div id="siteSearchResults" class="map-search-results" hidden></div>
+  </div>
+  <div id="mapRoot" style="height:calc(100vh - 150px); border-radius:var(--radius); overflow:hidden; border:1px solid var(--line)"></div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/openlocationcode/1.0.4/openlocationcode.js"></script>
+<script src="config.js"></script>
+<script src="dialog.js"></script>
+<script>
+const session = requireSession();
+if (typeof gaTrackRole === 'function') gaTrackRole(session.role);
+document.getElementById('whoName').textContent = session.name;
+document.getElementById('whoRole').textContent = ROLE_LABELS[session.role] || session.role;
+document.getElementById('whoAvatar').textContent = (session.name || '?').split(' ').map(function (s) { return s[0]; }).join('').slice(0, 2).toUpperCase();
+document.getElementById('backLink').href = backLinkHref(session);
+
+const params = new URLSearchParams(window.location.search);
+const focusSiteId = params.get('site');
+
+// A site's GPS field accepts two formats:
+//   1. "lat, lng"              e.g. "13.2167, -16.7500"
+//   2. a Google Plus Code      e.g. "ABCD+123, City" (short code + locality)
+//                               or "7FG56RV+P62" (full code, no locality needed)
+// Plus Codes are decoded with Google's own open-source `open-location-code`
+// library (loaded above, no API key) — a SHORT code like "56RV+P62" only
+// makes sense relative to roughly where it is, so its locality text
+// ("Gunjur") is first geocoded with OpenStreetMap's free Nominatim lookup to
+// get a reference point, then OpenLocationCode.recoverNearest() expands it
+// to the full code before decoding. A FULL code decodes directly, no
+// geocoding needed.
+const geocodeCache = {};
+async function geocodeLocality(text) {
+  const key = text.trim().toLowerCase();
+  if (geocodeCache[key] !== undefined) return geocodeCache[key];
+  try {
+    const res = await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=' + encodeURIComponent(text));
+    const rows = await res.json();
+    const found = rows && rows[0] ? [Number(rows[0].lat), Number(rows[0].lon)] : null;
+    geocodeCache[key] = found;
+    return found;
+  } catch (e) {
+    geocodeCache[key] = null;
+    return null;
+  }
+}
+
+function isLatLng(lat, lng) {
+  return isFinite(lat) && isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+}
+
+let usedGeocoding = false;
+
+async function resolveCoords(raw) {
+  if (!raw) return null;
+  const text = String(raw).trim();
+
+  // Plain "lat, lng" first — the common case, no network needed.
+  const plain = text.split(',');
+  if (plain.length === 2) {
+    const lat = Number(plain[0].trim()), lng = Number(plain[1].trim());
+    if (isLatLng(lat, lng)) return [lat, lng];
+  }
+
+  // Otherwise treat it as a Plus Code. Usually "CODE, Locality", but some
+  // recorded values have an extra label in front too, e.g.
+  // "JangAfrika, ABCD+123, City" (a place name, then the code, then the
+  // locality) — so rather than assuming the code is always the first
+  // comma-separated part, scan every part and use whichever one is
+  // actually a valid Plus Code. Everything else becomes the locality text
+  // (still useful for geocoding a short code, extra words and all).
+  if (typeof OpenLocationCode === 'undefined') return null;
+  const parts = text.split(',').map(function (p) { return p.trim(); }).filter(Boolean);
+  let codeIdx = -1;
+  for (let i = 0; i < parts.length; i++) {
+    if (OpenLocationCode.isValid(parts[i])) { codeIdx = i; break; }
+  }
+  if (codeIdx === -1) return null;
+  const codePart = parts[codeIdx];
+  const localityPart = parts.filter(function (_, i) { return i !== codeIdx; }).join(', ');
+
+  try {
+    if (OpenLocationCode.isFull(codePart)) {
+      const area = OpenLocationCode.decode(codePart);
+      return [area.latitudeCenter, area.longitudeCenter];
+    }
+    if (OpenLocationCode.isShort(codePart) && localityPart) {
+      const ref = await geocodeLocality(localityPart);
+      if (!ref) return null;
+      usedGeocoding = true;
+      const fullCode = OpenLocationCode.recoverNearest(codePart, ref[0], ref[1]);
+      const area = OpenLocationCode.decode(fullCode);
+      return [area.latitudeCenter, area.longitudeCenter];
+    }
+  } catch (e) { /* malformed code — treated the same as no coordinates */ }
+  return null;
+}
+
+async function init() {
+  try {
+    const [sites, clients] = await Promise.all([
+      apiCall('list', { table: 'SITES' }),
+      apiCall('list', { table: 'CLIENTS' }).catch(function () { return []; })
+    ]);
+    const clientsById = byId(clients);
+
+    const resolved = await Promise.all(sites.map(async function (s) {
+      return { site: s, coords: await resolveCoords(s.gps_coords) };
+    }));
+    const located = resolved.filter(function (x) { return x.coords; });
+
+    if (usedGeocoding) {
+      document.getElementById('geocodeNotice').textContent = 'Some sites use a short Plus Code, located via OpenStreetMap’s free locality lookup — pin position is approximate for those until the code is widened to a full one.';
+      document.getElementById('geocodeNotice').hidden = false;
+    }
+
+    if (!located.length) {
+      document.getElementById('emptyState').hidden = false;
+      document.getElementById('mapRoot').hidden = true;
+      return;
+    }
+
+    const map = L.map('mapRoot');
+
+    // Satellite imagery (Esri World Imagery — free, no API key) is the
+    // default view; a layer switcher lets anyone flip to an OpenStreetMap
+    // street map. Swap in Google's own satellite tiles later by adding a
+    // Maps API key, if the Esri resolution for a given site isn't sharp
+    // enough — the layer control below is exactly where that would plug in.
+    const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community',
+      maxZoom: 19
+    });
+    const streets = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19
+    });
+    satellite.addTo(map);
+    L.control.layers({ 'Satellite': satellite, 'Street': streets }).addTo(map);
+
+    const markers = {};
+    const bounds = [];
+    located.forEach(function (x) {
+      const s = x.site;
+      const client = s.client_id ? clientsById[s.client_id] : null;
+      // "Get directions" and "View" both go straight to Google Maps with
+      // the resolved lat/lng as a plain navigation URL — no API key or
+      // billing needed for this (that's only for embedding Google's own
+      // map/satellite tiles in the page, which isn't what these links do).
+      const gmapsQuery = x.coords[0] + ',' + x.coords[1];
+      const popupHtml = '<strong>' + esc(s.name) + '</strong><br>' +
+        esc(s.location || '') +
+        (client ? '<br>' + esc(client.name) : (s.client_name ? '<br>' + esc(s.client_name) : '')) +
+        '<br>' + esc(s.gps_coords || '') +
+        '<br><a href="site.html?id=' + encodeURIComponent(s.id) + '">Open site &rarr;</a>' +
+        '<br><a href="https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(gmapsQuery) + '" target="_blank" rel="noopener">View in Google Maps &rarr;</a>' +
+        '<br><a href="https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(gmapsQuery) + '" target="_blank" rel="noopener">Get directions &rarr;</a>';
+      const marker = L.marker(x.coords).addTo(map).bindPopup(popupHtml);
+      markers[s.id] = marker;
+      bounds.push(x.coords);
+    });
+
+    setupSiteSearch(located, markers, map);
+
+    const focused = focusSiteId ? located.find(function (x) { return String(x.site.id) === String(focusSiteId); }) : null;
+    if (focused) {
+      const lat = focused.coords[0], lng = focused.coords[1];
+      const gmapsQuery = lat + ',' + lng;
+      document.getElementById('googleEmbedTitle').textContent = focused.site.name + ' on Google Maps';
+      document.getElementById('googleEmbedFrame').src = 'https://maps.google.com/maps?q=' + gmapsQuery + '&z=17&output=embed';
+      document.getElementById('googleOpenLink').href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(gmapsQuery);
+      document.getElementById('googleDirectionsLink').href = 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(gmapsQuery);
+      document.getElementById('googleEmbedPanel').hidden = false;
+      document.getElementById('overviewHeading').textContent = 'All sites';
+    }
+
+    if (focusSiteId && markers[focusSiteId]) {
+      map.setView(markers[focusSiteId].getLatLng(), 18);
+      markers[focusSiteId].openPopup();
+    } else if (bounds.length === 1) {
+      map.setView(bounds[0], 17);
+    } else {
+      map.fitBounds(bounds, { padding: [30, 30] });
+    }
+  } catch (err) {
+    document.getElementById('loadError').textContent = err.message;
+    document.getElementById('loadError').hidden = false;
+  }
+}
+
+function esc(s) { return String(s || '').replace(/[&<>"]/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]; }); }
+
+// A small type-ahead over the sites that actually have a pin — matches by
+// name or location as you type, and clicking (or pressing Enter) a result
+// pans/zooms the map to that site's marker and opens its popup, the same
+// place clicking the pin itself lands you.
+function setupSiteSearch(located, markers, map) {
+  const input = document.getElementById('siteSearch');
+  const resultsBox = document.getElementById('siteSearchResults');
+  input.disabled = false;
+
+  function closeResults() {
+    resultsBox.hidden = true;
+    resultsBox.innerHTML = '';
+  }
+
+  function matchesFor(q) {
+    return located.filter(function (x) {
+      const s = x.site;
+      return (s.name || '').toLowerCase().includes(q) || (s.location || '').toLowerCase().includes(q);
+    });
+  }
+
+  function goToSite(x) {
+    map.setView(markers[x.site.id].getLatLng(), 18);
+    markers[x.site.id].openPopup();
+    input.value = x.site.name;
+    closeResults();
+  }
+
+  function showResults(matches) {
+    resultsBox.innerHTML = '';
+    if (!matches.length) {
+      const empty = document.createElement('div');
+      empty.className = 'map-search-empty';
+      empty.textContent = 'No matching sites';
+      resultsBox.appendChild(empty);
+    } else {
+      matches.slice(0, 8).forEach(function (x) {
+        const s = x.site;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'map-search-item';
+        btn.innerHTML = esc(s.name) + (s.location ? '<span class="sub">' + esc(s.location) + '</span>' : '');
+        btn.addEventListener('click', function () { goToSite(x); });
+        resultsBox.appendChild(btn);
+      });
+    }
+    resultsBox.hidden = false;
+  }
+
+  input.addEventListener('input', function () {
+    const q = input.value.trim().toLowerCase();
+    if (!q) { closeResults(); return; }
+    showResults(matchesFor(q));
+  });
+
+  input.addEventListener('focus', function () {
+    const q = input.value.trim().toLowerCase();
+    if (q) showResults(matchesFor(q));
+  });
+
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const q = input.value.trim().toLowerCase();
+      if (!q) return;
+      const match = matchesFor(q)[0];
+      if (match) goToSite(match);
+    } else if (e.key === 'Escape') {
+      closeResults();
+    }
+  });
+
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('.map-search')) closeResults();
+  });
+}
+
+init();
+</script>
+</body>
+</html>
