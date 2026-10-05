@@ -81,12 +81,8 @@ const isItAdmin = session.role === 'IT_ADMIN';
 const params = new URLSearchParams(window.location.search);
 const userId = params.get('id') || session.userId;
 
-const ROLE_OPTIONS = [
-  { value: 'MANAGER', label: 'Manager' },
-  { value: 'ADMIN_SECRETARY', label: 'Admin secretary' },
-  { value: 'SITE_SUPERVISOR', label: 'Site supervisor' },
-  { value: 'IT_ADMIN', label: 'IT admin' }
-];
+// ROLE_OPTIONS comes from config.js (redeclaring it here broke this page's
+// script, which left the Back link pointing at the login page).
 
 let profileCache = null;
 
