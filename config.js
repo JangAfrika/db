@@ -350,6 +350,23 @@ function withOriginTab_(anchor) {
 // requireSession(), before building any *Link()s on that page. Reads this
 // page's own `from` param so links further down the chain inherit it, and
 // returns the href the page's own "Back" button should use.
+// The Back link also prefers real browser history: if this page was opened
+// from another page of the site (a KPI page, a dashboard tab, another detail
+// page), Back returns to exactly that page and place instead of always going
+// to the dashboard. The computed href below is only the fallback, for when
+// the page was opened directly (bookmark, pasted link, new tab).
+document.addEventListener('click', function (e) {
+  const a = e.target.closest ? e.target.closest('a.back-link') : null;
+  if (!a || e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.button) return;
+  try {
+    if (window.history.length > 1 && document.referrer &&
+        new URL(document.referrer).origin === window.location.origin) {
+      e.preventDefault();
+      window.history.back();
+    }
+  } catch (err) { /* fall through to the normal href */ }
+});
+
 function backLinkHref(session) {
   const from = new URLSearchParams(window.location.search).get('from');
   if (from) window.CURRENT_ORIGIN_TAB = from;
