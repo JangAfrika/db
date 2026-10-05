@@ -83,10 +83,13 @@ a { color: var(--accent-ink); }
   position: sticky;
   top: 0;
   height: 100vh;
+  height: 100dvh; /* actual visible height on mobile browsers, not the address-bar-inflated 100vh */
   /* With enough nav items the sidebar's own content can run taller than the
      viewport — scroll the sidebar itself (not the whole page) so Logout
      stays reachable instead of being pushed off-screen. */
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 /* Keep Log out (and Report an issue) visibly anchored at the bottom of
@@ -404,6 +407,7 @@ tbody tr:hover td { background: var(--bg); }
     left: 0;
     bottom: 0;
     height: 100vh;
+    height: 100dvh; /* actual visible height on mobile browsers, not the address-bar-inflated 100vh */
     width: 240px;
     max-width: 82vw;
     flex-direction: column;
@@ -413,6 +417,9 @@ tbody tr:hover td { background: var(--bg); }
     transform: translateX(-100%);
     transition: transform .25s ease;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
   }
   .sidebar.open { transform: translateX(0); }
   .sidebar-brand { padding: 6px 8px 20px; }
